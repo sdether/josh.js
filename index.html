@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+    <script src="js/readline.js"></script>
+    <style type="text/css">
+        #quake-console {
+            display: none;
+            height: 400px;
+            width: 100%;
+            opacity: 0.9;
+            background-color: gray;
+            color: white;
+            position: fixed;
+            padding: 20px 20px 20px 20px;
+            top: 0;
+            z-index: 1000;
+        }</style>
+    <style type="text/css">/**/
+    #page-top #pageToc {
+        display: none;
+    }
+
+        /**/</style>
+    <script type="text/javascript">
+        var r = new ReadLine(window, document);
+
+        $(document).ready(function () {
+            r.onKeydown(function (key) {
+                $('#debug').text(JSON.stringify(key));
+            });
+            r.onChange(function (line) {
+                $('#line-input').text(line.text);
+            });
+            $(document).on('keyup', function (e) {
+                if (e.keyCode && e.keyCode === 192 && e.shiftKey) {
+                    $('#quake-console').slideDown();
+                    $('#quake-console').focus();
+                } else if (e.keyCode && e.keyCode === 27) {
+                    $('#quake-console').slideUp();
+                    $('#quake-console').blur();
+                    console.log("blur");
+                }
+            });
+            $('#quake-console').focus(function() {
+                r.activate();
+            })
+            $('#quake-console').blur(function() {
+                r.deactivate();
+            })
+        });
+    </script>
+</head>
+<body>
+<div id="quake-console">
+    <div id="line">jsh$ <span id="line-input" /></div>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h2>Key event:</h2>
+<pre id="debug"/>
+</body>
+</html>
