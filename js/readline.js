@@ -21,7 +21,7 @@
 
   ReadLine = function (window, document) {
 
-    // instance vars
+    // instance fields
     var _active = false;
     var _onCompletion;
     var _onEnter;
@@ -29,6 +29,7 @@
     var _onChange;
     var _text = '';
     var _cursor = 0;
+    var _strUtil = ReadLine.StrUtil;
 
     // set up key capture
     document.onkeydown = function (e) {
@@ -84,6 +85,69 @@
           break;
       }
       if (!handled) {
+
+        // intercept ctrl- and alt- sequences
+        if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+          switch (e.keyCode) {
+            case 65: // A
+              cmdHome();
+              handled = true;
+              break;
+            case 69: // E
+              cmdEnd();
+              handled = true;
+              break;
+            case 66: // B
+              cmdLeft();
+              handled = true;
+              break;
+            case 70: // F
+              cmdRight();
+              handled = true;
+              break;
+            case 80: // P
+              cmdHistoryPrev();
+              handled = true;
+              break;
+            case 78: // N
+              cmdHistoryNext();
+              handled = true;
+              break;
+            case 75: // K
+              cmdKillToEOF();
+              handled = true;
+              break;
+            case 89: // Y
+              cmdYank();
+              handled = true;
+              break;
+            case 68: // D
+              cmdDeleteChar();
+              handled = true;
+              break;
+            case 76: // L
+              cmdRefresh();
+              handled = true;
+              break;
+            case 82: // R
+              cmdReverseSearch();
+              handled = true;
+              break;
+          }
+        } else if (e.altKey && !e.ctrlKey && !e.shiftKey) {
+          switch (e.keyCode) {
+            case 66: // B
+              cmdBackwardWord();
+              handled = true;
+              break;
+            case 70: // F
+              cmdForwardWord();
+              handled = true;
+              break;
+          }
+        }
+      }
+      if (!handled) {
         return true;
       }
       var info = getKeyInfo(e);
@@ -106,78 +170,9 @@
       }
       console.log("keypress - code: " + e.keyCode + ", char: " + String.fromCharCode(e.keyCode) + ", ctrl: " + e.ctrlKey);
       var key = getKeyInfo(e);
-      if (key.control && !key.shift && !key.alt) {
-        switch (key.char) {
-          case 'A':
-          case 'a':
-            cmdHome();
-            break;
-          case 'E':
-          case 'e':
-            cmdEnd();
-            break;
-          case 'B':
-          case 'b':
-            cmdLeft();
-            break;
-          case 'F':
-          case 'f':
-            cmdRight();
-            break;
-          case 'P':
-          case 'p':
-            cmdHistoryPrev();
-            break;
-          case 'N':
-          case 'n':
-            cmdHistoryNext();
-            break;
-          case 'K':
-          case 'k':
-            cmdKillToEOF();
-            break;
-          case 'Y':
-          case 'y':
-            cmdYank();
-            break;
-          case 'D':
-          case 'd':
-            cmdDeleteChar();
-            break;
-          case 'L':
-          case 'l':
-            cmdRefresh();
-            break;
-          case 'R':
-          case 'r':
-            cmdReverseSearch();
-            break;
-        }
-      } else if (key.Alt && !key.ctrl && !key.shift) {
-        switch (key.code) {
-          case 'B':
-          case 'b':
-            cmdBackwardWord();
-            break;
-          case 'F':
-          case 'f':
-            cmdForwardWord();
-        }
-      } else if (key.ctrl || key.alt) {
-
-        // no handlers
-      } else {
-        if (_onKeydown) {
-          _onKeydown(key);
-        }
-        _text += key.char;
-        ++_cursor;
-        if (_onChange) {
-          _onChange({
-            text:_text,
-            pos:_cursor
-          });
-        }
+      addText(key.char);
+      if (_onKeydown) {
+        _onKeydown(key);
       }
       e.preventDefault();
       return false;
@@ -219,8 +214,9 @@
       if (_cursor == 0) {
         return;
       }
-      _text = _text.substr(0, _cursor - 1) + _text.substr(_cursor, _text.length - _cursor);
-      updateCursor(_cursor - 1);
+      --_cursor;
+      _text = _strUtil.remove(_text, _cursor, _cursor + 1);
+      updateCursor(_cursor);
     }
 
     function cmdComplete() {
@@ -245,10 +241,10 @@
     }
 
     function cmdLeft() {
-      if (_cursor = 0) {
+      if (_cursor == 0) {
         return;
       }
-      updateCursor(cursor - 1);
+      updateCursor(_cursor - 1);
     }
 
     function cmdHistoryPrev() {
@@ -256,10 +252,10 @@
     }
 
     function cmdRight() {
-      if(_cursor == _text.length) {
+      if (_cursor == _text.length) {
         return;
       }
-      updateCursor(_cursor+ 1);
+      updateCursor(_cursor + 1);
     }
 
     function cmdHistoryNext() {
@@ -294,9 +290,60 @@
     }
 
     function updateCursor(position) {
+      _cursor = position;
+      refresh();
+    }
 
+    function addText(c) {
+      _text = _strUtil.insert(_text, _cursor, c);
+      ++_cursor;
+      refresh();
+    }
+
+    function refresh() {
+      if (_onChange) {
+        _onChange({
+          text:_text,
+          cursor:_cursor
+        });
+      }
     }
 
     return self
-  }
+  };
+
+  ReadLine.StrUtil = {
+    remove:function (text, from, to) {
+      if (text.length <= 1 || text.length <= to - from) {
+        return '';
+      }
+      if (to == text.length - 1) {
+
+        // delete trailing characters
+        return text.substr(0, text.length - from);
+      }
+      if (from == 0) {
+
+        // delete leading characters
+        return text.substr(to);
+      }
+      var left = text.substr(0, from);
+      var right = text.substr(to);
+      return left + right;
+    },
+    insert:function (text, idx, ins) {
+      if (idx == 0) {
+        return ins + text;
+      }
+      if (idx >= text.length) {
+        return text + ins;
+      }
+      var left = text.substr(0, idx);
+      var right = text.substr(idx);
+      return left + ins + right;
+    }
+  };
+
 })();
+
+

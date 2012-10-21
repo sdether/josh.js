@@ -10,6 +10,7 @@
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
     <script src="js/readline.js"></script>
+    <script src="js/shell.js"></script>
     <style type="text/css">
         #quake-console {
             display: none;
@@ -23,69 +24,78 @@
             top: 0;
             z-index: 1000;
         }</style>
-    <style type="text/css">/**/
-    #page-top #pageToc {
-        display: none;
-    }
-
-        /**/</style>
     <script type="text/javascript">
         var r = new ReadLine(window, document);
-
+        var shell = new Shell({readline:r});
         $(document).ready(function () {
-            r.onKeydown(function (key) {
+             r.onKeydown(function (key) {
                 $('#debug').text(JSON.stringify(key));
             });
-            r.onChange(function (line) {
-                $('#line-input').text(line.text);
-            });
+//            r.onChange(function (line) {
+//                $('#line-input').text(line.text);
+//            });
+            var quakeConsole = $('#quake-console');
             $(document).on('keyup', function (e) {
                 if (e.keyCode && e.keyCode === 192 && e.shiftKey) {
-                    $('#quake-console').slideDown();
-                    $('#quake-console').focus();
+                    quakeConsole.slideDown();
+                    quakeConsole.focus();
                 } else if (e.keyCode && e.keyCode === 27) {
-                    $('#quake-console').slideUp();
-                    $('#quake-console').blur();
+                    quakeConsole.slideUp();
+                    quakeConsole.blur();
                     console.log("blur");
                 }
             });
-            $('#quake-console').focus(function() {
-                r.activate();
+            quakeConsole.focus(function () {
+                shell.activate();
             })
-            $('#quake-console').blur(function() {
-                r.deactivate();
+            quakeConsole.blur(function () {
+                shell.deactivate();
             })
+            shell.activate();
         });
     </script>
 </head>
 <body>
 <div id="quake-console">
-    <div id="line">jsh$ <span id="line-input" /></div>
+    <div id="line">jsh$ <span id="line-input"></span></div>
 </div>
+<div id="shell-cli"><span class="prompt"></span>&nbsp;<span class="input"></span></div>
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <p>&nbsp;</p>
+
 <h2>Key event:</h2>
 <pre id="debug"></pre>
+<div id="x"></div>
 <div id="keydown"></div>
 <div id="keypress"></div>
 <script>
-//    document.onkeydown = function (e) {
-//        $('#keydown').text("keydown - code: "+ e.keyCode);
-//        return true;
-//    }
-//    document.onkeypress = function(e) {
-//        $('#keypress').text("keypress - code: "+ e.keyCode+", char: "+ String.fromCharCode(e.keyCode)+", ctrl: "+ e.ctrlKey);
-//        return true;
-//    }
+    //    document.onkeydown = function (e) {
+    //        $('#keydown').text("keydown - code: "+ e.keyCode);
+    //        return true;
+    //    }
+    //    document.onkeypress = function(e) {
+    //        $('#keypress').text("keypress - code: "+ e.keyCode+", char: "+ String.fromCharCode(e.keyCode)+", ctrl: "+ e.ctrlKey);
+    //        return true;
+    //    }
 </script>
 </body>
 </html>
