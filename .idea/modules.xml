@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/readline.js.iml" filepath="$PROJECT_DIR$/.idea/readline.js.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/shell.js.iml" filepath="$PROJECT_DIR$/.idea/shell.js.iml" />
     </modules>
   </component>
 </project>
