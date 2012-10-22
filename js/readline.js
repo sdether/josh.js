@@ -1,25 +1,25 @@
-(function () {
+(function() {
   var SPECIAL = {
-    8:'BACKSPACE',
-    9:'TAB',
-    13:'ENTER',
-    19:'PAUSE',
-    20:'CAPS_LOCK',
-    27:'ESCAPE',
-    32:'SPACE',
-    33:'PAGE_UP',
-    34:'PAGE_DOWN',
-    35:'END',
-    36:'HOME',
-    37:'LEFT',
-    38:'UP',
-    39:'RIGHT',
-    40:'DOWN',
-    45:'INSERT',
-    46:'DELETE'
+    8: 'BACKSPACE',
+    9: 'TAB',
+    13: 'ENTER',
+    19: 'PAUSE',
+    20: 'CAPS_LOCK',
+    27: 'ESCAPE',
+    32: 'SPACE',
+    33: 'PAGE_UP',
+    34: 'PAGE_DOWN',
+    35: 'END',
+    36: 'HOME',
+    37: 'LEFT',
+    38: 'UP',
+    39: 'RIGHT',
+    40: 'DOWN',
+    45: 'INSERT',
+    46: 'DELETE'
   };
 
-  ReadLine = function (config) {
+  ReadLine = function(config) {
     config = config || {};
 
     // instance fields
@@ -39,25 +39,28 @@
 
     // public methods
     var self = {
-      activate:function () {
+      activate: function() {
         _active = true;
       },
-      deactivate:function () {
+      deactivate: function() {
         _active = false;
       },
-      onKeydown:function (callback) {
+      onKeydown: function(callback) {
         _onKeydown = callback;
       },
-      onChange:function (callback) {
+      onChange: function(callback) {
         _onChange = callback;
       },
-      onEnter:function(callback) {
+      onEnter: function(callback) {
         _onEnter = callback;
       },
-      getLine:function() {
+      onCompletion: function(callback) {
+        _onCompletion = callback;
+      },
+      getLine: function() {
         return {
-          text:_text,
-          cursor:_cursor
+          text: _text,
+          cursor: _cursor
         };
       }
     };
@@ -65,11 +68,11 @@
     // private methods
     function getKeyInfo(e) {
       var info = {
-        code:e.keyCode,
-        shift:e.shiftKey,
-        control:e.controlKey,
-        alt:e.altKey,
-        isChar:true
+        code: e.keyCode,
+        shift: e.shiftKey,
+        control: e.controlKey,
+        alt: e.altKey,
+        isChar: true
       };
       var code = info.code;
       var c = String.fromCharCode(code);
@@ -79,13 +82,13 @@
     }
 
     function call(cmd) {
-      console.log('calling: '+cmd.name+', previous: '+_lastCmd);
+      console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
       _lastCmd = cmd.name;
       cmd();
     }
 
     function cmdBackpace() {
-      if (_cursor == 0) {
+      if(_cursor == 0) {
         return;
       }
       --_cursor;
@@ -94,7 +97,11 @@
     }
 
     function cmdComplete() {
-
+      if(_onCompletion) {
+        var insert = _onCompletion(self.getLine());
+        _text = _strUtil.insert(_text, _cursor, insert);
+        updateCursor(_cursor + insert.length);
+      }
     }
 
     function cmdDone() {
@@ -104,8 +111,8 @@
       var text = _text;
       _text = '';
       _cursor = 0;
-      if (_onEnter) {
-        _onEnter(text,self.getLine());
+      if(_onEnter) {
+        _onEnter(text, self.getLine());
       }
     }
 
@@ -118,14 +125,14 @@
     }
 
     function cmdLeft() {
-      if (_cursor == 0) {
+      if(_cursor == 0) {
         return;
       }
       updateCursor(_cursor - 1);
     }
 
     function cmdRight() {
-      if (_cursor == _text.length) {
+      if(_cursor == _text.length) {
         return;
       }
       updateCursor(_cursor + 1);
@@ -140,7 +147,7 @@
     }
 
     function cmdDeleteChar() {
-      if (_cursor == _text.length) {
+      if(_cursor == _text.length) {
         return;
       }
       _text = _strUtil.remove(_text, _cursor, _cursor + 1);
@@ -149,13 +156,13 @@
 
     function cmdKillToEOF() {
       _kill_buffer = _text.substr(_cursor);
-      _text = _text.substr(0,_cursor);
+      _text = _text.substr(0, _cursor);
       refresh();
     }
 
     function cmdYank() {
-      _text = _strUtil.insert(_text,_cursor,_kill_buffer);
-      updateCursor(_cursor+_kill_buffer.length);
+      _text = _strUtil.insert(_text, _cursor, _kill_buffer);
+      updateCursor(_cursor + _kill_buffer.length);
     }
 
     function cmdRefresh() {
@@ -186,20 +193,20 @@
     }
 
     function refresh() {
-      if (_onChange) {
+      if(_onChange) {
         _onChange(self.getLine());
       }
     }
 
     // set up key capture
-    document.onkeydown = function (e) {
+    document.onkeydown = function(e) {
       e = e || window.event
-      if (!_active) {
+      if(!_active) {
         return true;
       }
       //console.log("keydown - code: " + e.keyCode);
       var handled = true;
-      switch (e.keyCode) {
+      switch(e.keyCode) {
         case 8:  // Backspace
           call(cmdBackpace);
           break;
@@ -244,11 +251,11 @@
           handled = false;
           break;
       }
-      if (!handled) {
+      if(!handled) {
 
         // intercept ctrl- and alt- sequences
-        if (e.ctrlKey && !e.shiftKey && !e.altKey) {
-          switch (e.keyCode) {
+        if(e.ctrlKey && !e.shiftKey && !e.altKey) {
+          switch(e.keyCode) {
             case 65: // A
               call(cmdHome);
               handled = true;
@@ -294,8 +301,8 @@
               handled = true;
               break;
           }
-        } else if (e.altKey && !e.ctrlKey && !e.shiftKey) {
-          switch (e.keyCode) {
+        } else if(e.altKey && !e.ctrlKey && !e.shiftKey) {
+          switch(e.keyCode) {
             case 66: // B
               call(cmdBackwardWord);
               handled = true;
@@ -307,32 +314,32 @@
           }
         }
       }
-      if (!handled) {
+      if(!handled) {
         return true;
       }
       var info = getKeyInfo(e);
-      if (_onKeydown) {
+      if(_onKeydown) {
         _onKeydown({
-          code:e.keyCode,
-          shift:e.shiftKey,
-          control:e.controlKey,
-          alt:e.altKey,
-          name:SPECIAL[e.keyCode],
-          isChar:false
+          code: e.keyCode,
+          shift: e.shiftKey,
+          control: e.controlKey,
+          alt: e.altKey,
+          name: SPECIAL[e.keyCode],
+          isChar: false
         });
       }
       e.preventDefault();
       return false;
     };
-    document.onkeypress = function (e) {
-      if (!_active) {
+    document.onkeypress = function(e) {
+      if(!_active) {
         return true;
       }
       //console.log("keypress - code: " + e.keyCode + ", char: " + String.fromCharCode(e.keyCode) + ", ctrl: " + e.ctrlKey);
       _lastCmd = null;
       var key = getKeyInfo(e);
       addText(key.char);
-      if (_onKeydown) {
+      if(_onKeydown) {
         _onKeydown(key);
       }
       e.preventDefault();
@@ -343,11 +350,11 @@
   };
 
   ReadLine.StrUtil = {
-    remove:function (text, from, to) {
-      if (text.length <= 1 || text.length <= to - from) {
+    remove: function(text, from, to) {
+      if(text.length <= 1 || text.length <= to - from) {
         return '';
       }
-      if (from == 0) {
+      if(from == 0) {
 
         // delete leading characters
         return text.substr(to);
@@ -356,11 +363,11 @@
       var right = text.substr(to);
       return left + right;
     },
-    insert:function (text, idx, ins) {
-      if (idx == 0) {
+    insert: function(text, idx, ins) {
+      if(idx == 0) {
         return ins + text;
       }
-      if (idx >= text.length) {
+      if(idx >= text.length) {
         return text + ins;
       }
       var left = text.substr(0, idx);

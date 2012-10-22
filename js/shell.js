@@ -46,6 +46,11 @@
       onCmd:function(callback) {
         _onCmd = callback;
       },
+      onCompletion:function(callback) {
+        _readline.onCompletion(function(line) {
+          callback(line,_input_id);
+        });
+      },
       render:function () {
         var left = _line.text.substr(0, _line.cursor);
         var cursor = _line.text.substr(_line.cursor, 1);

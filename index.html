@@ -22,7 +22,20 @@
         }</style>
     <script type="text/javascript">
         var shell = new Shell();
-        $(document).ready(function () {
+        var dir = {
+            "Guide-Admin": {
+                "AccessControlPanel": {},
+                "AddingUsers": {},
+                "GettingStarted": {}
+            },
+            "Guide-User": {
+                "GettingStarted": {},
+                "ContentCreation": {},
+                "ContentManagement": {}
+            }
+        };
+
+        $(document).ready(function() {
 //             r.onKeydown(function (key) {
 //                $('#debug').text(JSON.stringify(key));
 //            });
@@ -30,29 +43,95 @@
 //                $('#line-input').text(line.text);
 //            });
             var quakeConsole = $('#quake-console');
-            $(document).on('keyup', function (e) {
-                if (e.keyCode && e.keyCode === 192 && e.shiftKey) {
+            $(document).on('keyup', function(e) {
+                if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
                     quakeConsole.slideDown();
                     quakeConsole.focus();
-                } else if (e.keyCode && e.keyCode === 27) {
+                } else if(e.keyCode && e.keyCode === 27) {
                     quakeConsole.slideUp();
                     quakeConsole.blur();
                     console.log("blur");
                 }
             });
-            quakeConsole.focus(function () {
+            quakeConsole.focus(function() {
                 shell.activate();
             })
-            quakeConsole.blur(function () {
+            quakeConsole.blur(function() {
                 shell.deactivate();
             })
-            shell.onCmd(function(cmd,input_id) {
+            shell.onCmd(function(cmd, input_id) {
                 var content = $('<div><strong>Command:&nbsp;</strong><span class="cmd"></span></div>');
                 $(content).find('.cmd').text(cmd);
                 $(input_id).after(content);
             });
+            shell.onCompletion(function(line, input_id) {
+                var match = _line.text.substr(0, _line.cursor);
+                if(!match) {
+                    return bestMatch("", dir);
+                }
+                var parts = match.split(" ");
+                var cur = dir;
+                match = parts[parts.length - 1];
+                var segments = match.split("/");
+                var last = segments[segments.length - 1];
+                for(var i = 0; i < segments.length; i++) {
+                    var segment = segments[i];
+                    if(!cur[segment]) {
+                        if(i == segments.length - 1) {
+
+                            // look for partial match
+                            return bestMatch(segment, cur, input_id);
+                        } else {
+
+                            // we can't even find a partial match, no completion
+                            return;
+                        }
+                    }
+                    if(i == segments.length - 1) {
+                        // exact match on last segment, no completion
+                        return;
+                    }
+                    cur = cur[segment];
+                }
+            });
             shell.activate();
         });
+        function bestMatch(match, pwd) {
+            var completions = [];
+            var common = '';
+            for(var segment in pwd) {
+                if(!pwd.hasOwnProperty(segment)) {
+                    continue;
+                }
+                if(segment.slice(0, match.length) == match) {
+                    completions.push(segment);
+                    if(!common) {
+                        common = segment;
+                        console.log("initial common:"+common);
+                    } else if(segment.slice(0, common.length) != common) {
+                        console.log("find common stem for '"+common+"' and '"+segment+"'");
+                        var i = match.length;
+                        while(true) {
+                            if(common[i] != segment[i]) {
+                                common = common.substr(0, i);
+                                break;
+                            }
+                            i++;
+                        }
+                    }
+                }
+            }
+            if(completions.length == 0) {
+                return;
+            }
+            if(completions.length == 1) {
+                completions = null;
+            }
+            return {
+                completion: common.substr(match.length),
+                options: completions
+            };
+        }
     </script>
 </head>
 <body>
