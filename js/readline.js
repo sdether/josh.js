@@ -36,6 +36,7 @@
     var _strUtil = ReadLine.StrUtil;
     var _kill_buffer = '';
     var _lastCmd;
+    var _completionActive;
 
     // public methods
     var self = {
@@ -98,9 +99,12 @@
 
     function cmdComplete() {
       if(_onCompletion) {
-        var insert = _onCompletion(self.getLine());
-        _text = _strUtil.insert(_text, _cursor, insert);
-        updateCursor(_cursor + insert.length);
+        var completion = _onCompletion(self.getLine());
+        if(completion) {
+          _text = _strUtil.insert(_text, _cursor, completion);
+          updateCursor(_cursor + completion.length);
+        }
+        _completionActive = true;
       }
     }
 
@@ -193,6 +197,12 @@
     }
 
     function refresh() {
+      if(_completionActive) {
+        _completionActive = false;
+        if(_onCompletion) {
+          _onCompletion();
+        }
+      }
       if(_onChange) {
         _onChange(self.getLine());
       }

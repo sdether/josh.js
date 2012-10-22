@@ -64,8 +64,8 @@
                 $(content).find('.cmd').text(cmd);
                 $(input_id).after(content);
             });
-            shell.onCompletion(function(line, input_id) {
-                var match = _line.text.substr(0, _line.cursor);
+            shell.onCompletion(function(line) {
+                var match = line.text.substr(0, line.cursor);
                 if(!match) {
                     return bestMatch("", dir);
                 }
@@ -80,7 +80,7 @@
                         if(i == segments.length - 1) {
 
                             // look for partial match
-                            return bestMatch(segment, cur, input_id);
+                            return bestMatch(segment, cur);
                         } else {
 
                             // we can't even find a partial match, no completion
@@ -129,7 +129,7 @@
             }
             return {
                 completion: common.substr(match.length),
-                options: completions
+                suggestions: completions
             };
         }
     </script>

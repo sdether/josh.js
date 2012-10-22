@@ -5,12 +5,15 @@
     var _prompt = config.prompt || 'jsh$';
     var _shell_id = config.shell_id || '#shell';
     var _input_id = config.input_id || '#shell-cli';
-    var _input_html = config.input_html || '<div id="shell-cli"><span class="prompt"></span>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
+    var _input_html = config.input_html || '<div id="shell-cli"><strong class="prompt"></strong>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
+    var _suggest_html = config.suggest_html || '<div id="shell-suggest"></div>';
+    var _suggest_id = config.suggest_id = "#shell-suggest";
     var _blinktime = config.blinktime || 500;
     var _readline = config.readline || new ReadLine();
     var _active = false;
     var _cursor_visible = false;
     var _onCmd;
+    var _suggestion;
     var _line = {
       text:'',
       cursor:0
@@ -48,7 +51,26 @@
       },
       onCompletion:function(callback) {
         _readline.onCompletion(function(line) {
-          callback(line,_input_id);
+          if(_suggestion) {
+            $(_suggest_id).remove();
+            _suggestion = null;
+          }
+          if(!line) {
+            return;
+          }
+          var completion = callback(line);
+          if(completion) {
+            if(completion.suggestions) {
+              _suggestion = $(_suggest_html);
+              for(var i=0;i<completion.suggestions.length;i++) {
+                console.log("suggestion: "+completion.suggestions[i]);
+                _suggestion.append($("<div></div>").text(completion.suggestions[i]));
+              }
+              console.log(_suggestion);
+              $(_input_id).after(_suggestion);
+            }
+            return completion.completion;
+          }
         });
       },
       render:function () {
