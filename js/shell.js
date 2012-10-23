@@ -9,7 +9,8 @@
     var _suggest_html = config.suggest_html || '<div id="shell-suggest"></div>';
     var _suggest_id = config.suggest_id = "#shell-suggest";
     var _blinktime = config.blinktime || 500;
-    var _readline = config.readline || new ReadLine();
+    var _history = config.history || new ReadLine.History();
+    var _readline = config.readline || new ReadLine({history: history});
     var _active = false;
     var _cursor_visible = false;
     var _onCmd;

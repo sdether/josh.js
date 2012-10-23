@@ -113,6 +113,7 @@
         return;
       }
       var text = _text;
+      _history.accept(text);
       _text = '';
       _cursor = 0;
       if(_onEnter) {
@@ -143,11 +144,17 @@
     }
 
     function cmdHistoryPrev() {
-
+      if(!_history.hasPrev()) {
+        return;
+      }
+      getHistory(_history.prev);
     }
 
     function cmdHistoryNext() {
-
+      if(!_history.hasNext()) {
+        return;
+      }
+      getHistory(_history.next);
     }
 
     function cmdDeleteChar() {
@@ -206,6 +213,12 @@
       if(_onChange) {
         _onChange(self.getLine());
       }
+    }
+
+    function getHistory(historyCall) {
+      _history.update(_text);
+      _text = historyCall();
+      updateCursor(_text.length);
     }
 
     // set up key capture
@@ -388,8 +401,36 @@
 
   ReadLine.History = function() {
 
-    return {
+    var _history = [''];
+    var _cursor = 0;
 
+    return {
+      update: function(text) {
+        _history[_cursor] = text;
+      },
+      accept: function(text) {
+        if(_cursor == _history.length - 1) {
+          _history[_cursor] = text;
+        } else {
+          _history.push(text);
+        }
+        _history.push('');
+        _cursor = _history.length - 1;
+      },
+      hasNext: function() {
+        return _cursor < (_history.length - 1);
+      },
+      hasPrev: function() {
+        return _cursor > 0;
+      },
+      prev: function() {
+        --_cursor;
+        return _history[_cursor];
+      },
+      next: function() {
+        ++_cursor;
+        return _history[_cursor];
+      }
     };
   };
 })();
