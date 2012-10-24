@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JSLintConfiguration">
-    <option indent="4" />
+    <option indent="2" />
     <option maxerr="50" />
+    <option nomen="true" />
+    <option vars="true" />
   </component>
 </project>
 
