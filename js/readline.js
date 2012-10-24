@@ -37,6 +37,8 @@
     var _kill_buffer = '';
     var _lastCmd;
     var _completionActive;
+    var _cmdQueue = [];
+    var _suspended = false;
 
     // public methods
     var self = {
@@ -46,17 +48,17 @@
       deactivate: function() {
         _active = false;
       },
-      onKeydown: function(callback) {
-        _onKeydown = callback;
+      onKeydown: function(keydownHandler) {
+        _onKeydown = keydownHandler;
       },
-      onChange: function(callback) {
-        _onChange = callback;
+      onChange: function(changeHandler) {
+        _onChange = changeHandler;
       },
-      onEnter: function(callback) {
-        _onEnter = callback;
+      onEnter: function(enterHandler) {
+        _onEnter = enterHandler;
       },
-      onCompletion: function(callback) {
-        _onCompletion = callback;
+      onCompletion: function(completionHandler) {
+        _onCompletion = completionHandler;
       },
       getLine: function() {
         return {
@@ -82,6 +84,14 @@
       return info;
     }
 
+    function queue(cmd) {
+      _cmdQueue.push(cmd);
+      if(_suspended) {
+        return;
+      }
+      call(_cmdQueue.shift());
+    }
+
     function call(cmd) {
       console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
       _lastCmd = cmd.name;
@@ -98,14 +108,19 @@
     }
 
     function cmdComplete() {
-      if(_onCompletion) {
-        var completion = _onCompletion(self.getLine());
-        if(completion) {
-          _text = _strUtil.insert(_text, _cursor, completion);
-          updateCursor(_cursor + completion.length);
-        }
-        _completionActive = true;
+      if(!_onCompletion) {
+        return;
       }
+      suspend(function(resumeCallback) {
+        _onCompletion(self.getLine(), function(completion) {
+          if(completion) {
+            _text = _strUtil.insert(_text, _cursor, completion);
+            updateCursor(_cursor + completion.length);
+          }
+          _completionActive = true;
+          resumeCallback();
+        });
+     });
     }
 
     function cmdDone() {
@@ -116,9 +131,27 @@
       _history.accept(text);
       _text = '';
       _cursor = 0;
-      if(_onEnter) {
-        _onEnter(text, self.getLine());
+      if(!_onEnter) {
+        return;
       }
+      suspend(function(resumeCallback) {
+        _onEnter(text, self.getLine(), resumeCallback);
+      });
+    }
+
+    function suspend(asyncCall) {
+      _suspended = true;
+      asyncCall(resume);
+    }
+
+    function resume() {
+      var cmd = _cmdQueue.shift();
+      if(!cmd) {
+        _suspended = false;
+        return;
+      }
+      call(cmd);
+      resume();
     }
 
     function cmdEnd() {
@@ -231,34 +264,34 @@
       var handled = true;
       switch(e.keyCode) {
         case 8:  // Backspace
-          call(cmdBackpace);
+          queue(cmdBackpace);
           break;
         case 9:  // Tab
-          call(cmdComplete);
+          queue(cmdComplete);
           break;
         case 13: // Enter
-          call(cmdDone);
+          queue(cmdDone);
           break;
         case 35: // End
-          call(cmdEnd);
+          queue(cmdEnd);
           break;
         case 36: // Home
-          call(cmdHome);
+          queue(cmdHome);
           break;
         case 37: // Left
-          call(cmdLeft);
+          queue(cmdLeft);
           break;
         case 38: // Up
-          call(cmdHistoryPrev);
+          queue(cmdHistoryPrev);
           break;
         case 39: // Right
-          call(cmdRight);
+          queue(cmdRight);
           break;
         case 40: // Down
-          call(cmdHistoryNext);
+          queue(cmdHistoryNext);
           break;
         case 46: // Delete
-          call(cmdDeleteChar);
+          queue(cmdDeleteChar);
           break;
 
         // these we catch and have no commands for
@@ -268,6 +301,7 @@
         case 33: // Page Up
         case 34: // Page Down
         case 45: // Insert
+          break;
 
         // all others we don't handle at this level
         default:
@@ -280,58 +314,58 @@
         if(e.ctrlKey && !e.shiftKey && !e.altKey) {
           switch(e.keyCode) {
             case 65: // A
-              call(cmdHome);
+              queue(cmdHome);
               handled = true;
               break;
             case 69: // E
-              call(cmdEnd);
+              queue(cmdEnd);
               handled = true;
               break;
             case 66: // B
-              call(cmdLeft);
+              queue(cmdLeft);
               handled = true;
               break;
             case 70: // F
-              call(cmdRight);
+              queue(cmdRight);
               handled = true;
               break;
             case 80: // P
-              call(cmdHistoryPrev);
+              queue(cmdHistoryPrev);
               handled = true;
               break;
             case 78: // N
-              call(cmdHistoryNext);
+              queue(cmdHistoryNext);
               handled = true;
               break;
             case 75: // K
-              call(cmdKillToEOF);
+              queue(cmdKillToEOF);
               handled = true;
               break;
             case 89: // Y
-              call(cmdYank);
+              queue(cmdYank);
               handled = true;
               break;
             case 68: // D
-              call(cmdDeleteChar);
+              queue(cmdDeleteChar);
               handled = true;
               break;
             case 76: // L
-              call(cmdRefresh);
+              queue(cmdRefresh);
               handled = true;
               break;
             case 82: // R
-              call(cmdReverseSearch);
+              queue(cmdReverseSearch);
               handled = true;
               break;
           }
         } else if(e.altKey && !e.ctrlKey && !e.shiftKey) {
           switch(e.keyCode) {
             case 66: // B
-              call(cmdBackwardWord);
+              queue(cmdBackwardWord);
               handled = true;
               break;
             case 70: // F
-              call(cmdForwardWord);
+              queue(cmdForwardWord);
               handled = true;
               break;
           }
@@ -359,17 +393,18 @@
         return true;
       }
       //console.log("keypress - code: " + e.keyCode + ", char: " + String.fromCharCode(e.keyCode) + ", ctrl: " + e.ctrlKey);
-      _lastCmd = null;
       var key = getKeyInfo(e);
-      addText(key.char);
-      if(_onKeydown) {
-        _onKeydown(key);
-      }
+      queue(function cmdKeyPress() {
+        addText(key.char);
+        if(_onKeydown) {
+          _onKeydown(key);
+        }
+      });
       e.preventDefault();
       return false;
     };
 
-    return self
+    return self;
   };
 
   ReadLine.StrUtil = {

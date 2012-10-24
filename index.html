@@ -56,44 +56,52 @@
             });
             quakeConsole.focus(function() {
                 shell.activate();
-            })
+            });
             quakeConsole.blur(function() {
                 shell.deactivate();
-            })
-            shell.onCmd(function(cmd, input_id) {
+            });
+            shell.onCmd(function(cmd, input_id, callback) {
                 var content = $('<div><strong>Command:&nbsp;</strong><span class="cmd"></span></div>');
                 $(content).find('.cmd').text(cmd);
                 $(input_id).after(content);
+                window.setTimeout(callback, 1000);
             });
-            shell.onCompletion(function(line) {
-                var match = line.text.substr(0, line.cursor);
-                if(!match) {
-                    return bestMatch("", dir);
-                }
-                var parts = match.split(" ");
-                var cur = dir;
-                match = parts[parts.length - 1];
-                var segments = match.split("/");
-                var last = segments[segments.length - 1];
-                for(var i = 0; i < segments.length; i++) {
-                    var segment = segments[i];
-                    if(!cur[segment]) {
-                        if(i == segments.length - 1) {
-
-                            // look for partial match
-                            return bestMatch(segment, cur);
-                        } else {
-
-                            // we can't even find a partial match, no completion
-                            return;
-                        }
-                    }
-                    if(i == segments.length - 1) {
-                        // exact match on last segment, no completion
+            shell.onCompletion(function(line, callback) {
+                console.log("slow completion");
+                window.setTimeout(function() {
+                    var match = line.text.substr(0, line.cursor);
+                    if(!match) {
+                        callback(bestMatch("", dir));
                         return;
                     }
-                    cur = cur[segment];
-                }
+                    var parts = match.split(" ");
+                    var cur = dir;
+                    match = parts[parts.length - 1];
+                    var segments = match.split("/");
+                    var last = segments[segments.length - 1];
+                    for(var i = 0; i < segments.length; i++) {
+                        var segment = segments[i];
+                        if(!cur[segment]) {
+                            if(i == segments.length - 1) {
+
+                                // look for partial match
+                                callback(bestMatch(segment, cur));
+                            } else {
+
+                                // we can't even find a partial match, no completion
+                                callback();
+                            }
+                            return;
+                        }
+                        if(i == segments.length - 1) {
+                            // exact match on last segment, no completion
+                            callback();
+                            return;
+                        }
+                        cur = cur[segment];
+                    }
+                    callback();
+                }, 1000);
             });
             shell.activate();
         });
@@ -108,9 +116,9 @@
                     completions.push(segment);
                     if(!common) {
                         common = segment;
-                        console.log("initial common:"+common);
+                        console.log("initial common:" + common);
                     } else if(segment.slice(0, common.length) != common) {
-                        console.log("find common stem for '"+common+"' and '"+segment+"'");
+                        console.log("find common stem for '" + common + "' and '" + segment + "'");
                         var i = match.length;
                         while(true) {
                             if(common[i] != segment[i]) {
@@ -129,7 +137,7 @@
                 completions = null;
             }
             return {
-                completion: common.substr(match.length),
+                result: common.substr(match.length),
                 suggestions: completions
             };
         }
