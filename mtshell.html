@@ -26,14 +26,19 @@
         var shell = new MtShell();
         $(document).ready(function() {
             var mtConsole = $('#mt-console');
+            function showConsole() {
+                mtConsole.slideDown();
+                mtConsole.focus();
+            }
+            function hideConsole() {
+                mtConsole.slideUp();
+                mtConsole.blur();
+            }
             $(document).on('keyup', function(e) {
                 if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
-                    mtConsole.slideDown();
-                    mtConsole.focus();
+                    showConsole();
                 } else if(e.keyCode && e.keyCode === 27) {
-                    mtConsole.slideUp();
-                    mtConsole.blur();
-                    console.log("blur");
+                    hideConsole();
                 }
             });
             mtConsole.focus(function() {
@@ -41,6 +46,10 @@
             });
             mtConsole.blur(function() {
                 shell.deactivate();
+            });
+            showConsole();
+            $.getJSON('http://ariel.mindtouch.com/@api/deki/console/matches?path=./', function(data) {
+                console.log(JSON.stringify(data));
             });
         });
     </script>
