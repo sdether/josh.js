@@ -1,0 +1,59 @@
+<html>
+<head>
+    <script src="http://127.0.0.1/sh/js/readline.js"></script>
+    <script src="http://127.0.0.1/sh/js/shell.js"></script>
+    <script src="http://127.0.0.1/sh/js/mtshell.js"></script>
+    <style type="text/css">
+        """#shell {
+        display: none;
+        height: 400px;
+        width: 100%;
+        opacity: 0.8;
+        background-color: #002f05;
+        color: #00fe00;
+        position: fixed;
+        padding: 20px 20px 20px 20px;
+        top: 0;
+        z-index: 1000;
+        overflow: scroll;
+            }"""
+    </style>
+    <script type="text/javascript">
+        """
+        var shell = new MtShell();
+        $(document).ready(function() {
+            shell.init(function(state) {
+
+                var mtConsole = $('#shell');
+                function showConsole() {
+                    mtConsole.slideDown();
+                    mtConsole.focus();
+                }
+                function hideConsole() {
+                    mtConsole.slideUp();
+                    mtConsole.blur();
+                }
+                $(document).on('keyup', function(e) {
+                    if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
+                        showConsole();
+                    } else if(e.keyCode && e.keyCode === 27) {
+                        hideConsole();
+                    }
+                });
+                mtConsole.focus(function() {
+                    shell.activate();
+                });
+                mtConsole.blur(function() {
+                    shell.deactivate();
+                });
+                if(state.active) {
+                    showConsole();
+                }
+            });
+        });"""
+    </script>
+</head>
+<body>
+<div id="shell"></div>
+</body>
+</html>
