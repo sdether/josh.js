@@ -6,7 +6,9 @@
       shellConfig.history = config.history;
     }
     var _shell = new Shell(shellConfig);
-    var _commandList = ['go', 'ls', 'cd', 'show', 'pwd'];
+    var _commandList = _.sortBy(['go', 'ls', 'cd', 'show', 'pwd', 'help'], function(x) {
+      return x;
+    });
     var _namespaces = {
       0: "",
       2: "User:",
@@ -58,7 +60,11 @@
     }
 
     function completePath(path, callback) {
-      $.getJSON("/@api/deki/console/matches?path=" + path, function(data) {
+      var uri = "/@api/deki/console/matches?path=" + encodeURIComponent(path);
+      if(_current) {
+        uri = uri + "&current=" + _current.Id;
+      }
+      $.getJSON(uri, function(data) {
         console.log(data);
         callback(bestMatch(path, data.Matches));
       });
@@ -71,7 +77,11 @@
       if(_home && path == '/') {
         return callback(_home);
       }
-      $.getJSON("/@api/deki/console/node?path=" + path, function(data) {
+      var uri = "/@api/deki/console/node?path=" + encodeURIComponent(path);
+      if(_current) {
+        uri = uri + "&current=" + _current.Id;
+      }
+      $.getJSON(uri, function(data) {
         console.log("page:" + data);
         callback(data);
       });
@@ -81,11 +91,19 @@
       var parts = split(cmdtext);
       var cmd = parts[0];
       var path = parts[1];
-      if(startsWith(cmd, ".") || startsWith(cmd, "/")) {
+      if(startsWith(cmd, ".") || startsWith(cmd, "/") || startsWith(cmd, "#")) {
         path = cmd;
         cmd = "show";
       }
       switch(cmd) {
+        case "help":
+          var content = $('<div><div><strong>Commands:</strong></div></div>');
+          _.each(_commandList, function(command) {
+            content.append(_.template('<div>&nbsp;<%=command%></div>', {command: command}))
+          });
+          $(input_id).after(content);
+          callback();
+          return;
         case "go":
           getPage(path, function(page) {
             var path = getPath(page);
@@ -94,7 +112,7 @@
           });
           return;
         case"ls":
-          callback();
+          ls(input_id, path, callback);
           return;
         case"pwd":
           $(input_id).after(getPath(_current));
@@ -111,8 +129,6 @@
           });
           return;
         default:
-          //var content = $('<div><strong>Unrecognized command:&nbsp;</strong><span class="cmd"></span></div>');
-          //$(content).find('.cmd').text(cmd);
           var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
           $(input_id).after(content);
           callback();
@@ -127,6 +143,32 @@
 
     function getPath(page) {
       return " /" + _namespaces[page.Namespace] + page.Path;
+    }
+
+    function getSegment(page) {
+      var segments = page.Path.split('/');
+      return segments[segments.length - 1];
+    }
+
+    function ls(input_id, path, callback) {
+      getPage(path, function(page) {
+        getChildren(page, function(pages) {
+          var p = _.map(pages, function(page) {
+            var lsInfo = { id: page.Id, segment: getSegment(page), name: page.DisplayName};
+            lsInfo.name = lsInfo.name || lsInfo.segment;
+            return lsInfo;
+          });
+          console.log(p);
+          $(input_id).after(_.template("<% _.each(p, function(page) { %><div>[<%=page.id%>]&nbsp;<%=page.segment%> (<%=page.name%>)</div> <% }); %>", {p: p}));
+          callback();
+        });
+      });
+    }
+
+    function getChildren(page, callback) {
+      $.getJSON("/@api/deki/console/node/" + page.Id + "/children", function(children) {
+        callback(children);
+      });
     }
 
     function show(input_id, page, callback) {
@@ -202,4 +244,5 @@
     return self;
   };
 
-})(jQuery, _, document, window, localStorage);
+})
+  (jQuery, _, document, window, localStorage);
