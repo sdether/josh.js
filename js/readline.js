@@ -120,7 +120,7 @@
           _completionActive = true;
           resumeCallback();
         });
-     });
+      });
     }
 
     function cmdDone() {
@@ -434,14 +434,33 @@
     }
   };
 
-  ReadLine.History = function() {
+  ReadLine.History = function(config) {
+    config = config || {};
 
-    var _history = [''];
-    var _cursor = 0;
+    var _history = config.history || [''];
+    var _cursor = config.cursor || 0;
+    var _storage = config.storage;
+    var _key = config.key || 'readline.history';
+
+    if(_storage) {
+      var data = _storage.getItem(_key);
+      if(data) {
+        _history = JSON.parse(data);
+        _cursor = _history.length - 1;
+      } else {
+        save();
+      }
+    }
+    function save() {
+      if(_storage) {
+        _storage.setItem(_key, JSON.stringify(_history));
+      }
+    }
 
     return {
       update: function(text) {
         _history[_cursor] = text;
+        save();
       },
       accept: function(text) {
         if(_cursor == _history.length - 1) {
@@ -451,6 +470,7 @@
         }
         _history.push('');
         _cursor = _history.length - 1;
+        save();
       },
       hasNext: function() {
         return _cursor < (_history.length - 1);

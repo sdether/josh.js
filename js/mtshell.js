@@ -1,25 +1,30 @@
-(function ($, _, document, window, localStorage) {
-  MtShell = function (config) {
-    var _shell = new Shell();
+(function($, _, document, window, localStorage) {
+  MtShell = function(config) {
+
+    var shellConfig = {};
+    if(config.history) {
+      shellConfig.history = config.history;
+    }
+    var _shell = new Shell(shellConfig);
     var _commandList = ['go', 'ls', 'cd', 'show', 'pwd'];
     var _namespaces = {
-      0:"",
-      2:"User:",
-      10:"Template:",
-      101:"Special:"
+      0: "",
+      2: "User:",
+      10: "Template:",
+      101: "Special:"
     };
     var _home = null;
     var _current = null;
     var _localState = {
-      active:false
+      active: false
     };
     // public methods
     var self = {
-      activate:function () {
-        if (!_home) {
-          getPage("/", function (page) {
+      activate: function() {
+        if(!_home) {
+          getPage("/", function(page) {
             _home = page;
-            getPage(window.location.pathname, function (page) {
+            getPage(window.location.pathname, function(page) {
               var prompt = setCurrent(page);
               _shell.setPrompt(prompt);
               _shell.activate();
@@ -29,7 +34,7 @@
           _shell.activate();
         }
       },
-      deactivate:function () {
+      deactivate: function() {
         _shell.deactivate();
       }
     };
@@ -39,12 +44,12 @@
       var partial = line.text.substr(0, line.cursor);
       var parts = split(partial);
       console.log(parts);
-      if (parts.length == 0) {
-        return callback({suggestions:_commandList});
+      if(parts.length == 0) {
+        return callback({suggestions: _commandList});
       }
-      if (parts.length == 1) {
+      if(parts.length == 1) {
         var cmd = parts[0];
-        if (startsWith(cmd, ".") || startsWith(cmd, "/")) {
+        if(startsWith(cmd, ".") || startsWith(cmd, "/")) {
           return completePath(cmd, callback);
         }
         return callback(bestMatch(cmd, _commandList));
@@ -53,20 +58,20 @@
     }
 
     function completePath(path, callback) {
-      $.getJSON("/@api/deki/console/matches?path=" + path, function (data) {
+      $.getJSON("/@api/deki/console/matches?path=" + path, function(data) {
         console.log(data);
         callback(bestMatch(path, data.Matches));
       });
     }
 
     function getPage(path, callback) {
-      if (_current && (!path || path == '.')) {
+      if(_current && (!path || path == '.')) {
         return callback(_current);
       }
-      if (_home && path == '/') {
+      if(_home && path == '/') {
         return callback(_home);
       }
-      $.getJSON("/@api/deki/console/node?path=" + path, function (data) {
+      $.getJSON("/@api/deki/console/node?path=" + path, function(data) {
         console.log("page:" + data);
         callback(data);
       });
@@ -76,13 +81,13 @@
       var parts = split(cmdtext);
       var cmd = parts[0];
       var path = parts[1];
-      if (startsWith(cmd, ".") || startsWith(cmd, "/")) {
+      if(startsWith(cmd, ".") || startsWith(cmd, "/")) {
         path = cmd;
         cmd = "show";
       }
-      switch (cmd) {
+      switch(cmd) {
         case "go":
-          getPage(path, function (page) {
+          getPage(path, function(page) {
             var path = getPath(page);
             console.log("navigating to " + path);
             window.location = path;
@@ -96,19 +101,19 @@
           callback();
           return;
         case "cd":
-          getPage(path, function (page) {
+          getPage(path, function(page) {
             callback(setCurrent(page));
           });
           return;
         case "show":
-          getPage(path, function (page) {
+          getPage(path, function(page) {
             show(input_id, page, callback);
           });
           return;
         default:
           //var content = $('<div><strong>Unrecognized command:&nbsp;</strong><span class="cmd"></span></div>');
           //$(content).find('.cmd').text(cmd);
-          var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd:cmd});
+          var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
           $(input_id).after(content);
           callback();
           return;
@@ -145,7 +150,7 @@
 
     function split(str) {
       var parts = str.split(/\s+/);
-      if (parts.length > 0 && !parts[parts.length - 1]) {
+      if(parts.length > 0 && !parts[parts.length - 1]) {
         parts.pop();
       }
       return parts;
@@ -158,18 +163,18 @@
     function bestMatch(partial, possible) {
       var completions = [];
       var common = '';
-      for (var i = 0; i < possible.length; i++) {
+      for(var i = 0; i < possible.length; i++) {
         var option = possible[i];
-        if (option.slice(0, partial.length) == partial) {
+        if(option.slice(0, partial.length) == partial) {
           completions.push(option);
-          if (!common) {
+          if(!common) {
             common = option;
             console.log("initial common:" + common);
-          } else if (option.slice(0, common.length) != common) {
+          } else if(option.slice(0, common.length) != common) {
             console.log("find common stem for '" + common + "' and '" + option + "'");
             var j = partial.length;
-            while (j < common.length && j < option.length) {
-              if (common[j] != option[j]) {
+            while(j < common.length && j < option.length) {
+              if(common[j] != option[j]) {
                 common = common.substr(0, j);
                 break;
               }
@@ -178,15 +183,15 @@
           }
         }
       }
-      if (completions.length == 0) {
+      if(completions.length == 0) {
         return;
       }
-      if (completions.length == 1) {
+      if(completions.length == 1) {
         completions = null;
       }
       return {
-        result:common.substr(partial.length),
-        suggestions:completions
+        result: common.substr(partial.length),
+        suggestions: completions
       };
     }
 
@@ -196,4 +201,5 @@
 
     return self;
   };
+
 })(jQuery, _, document, window, localStorage);
