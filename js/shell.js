@@ -3,7 +3,8 @@
     config = config || {};
     // instance fields
     var _prompt = config.prompt || 'jsh$';
-    var _shell_id = config.shell_id || '#shell';
+    var _shell_view_id = config.shell_view_id || '#shell-view';
+    var _shell_panel_id = config.shell_panel_id || '#shell-panel';
     var _input_id = config.input_id || '#shell-cli';
     var _input_html = config.input_html || '<div id="shell-cli"><strong class="prompt"></strong>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
     var _suggest_html = config.suggest_html || '<div id="shell-suggest"></div>';
@@ -19,7 +20,7 @@
       text:'',
       cursor:0
     };
-    var shell;
+    var _view, _panel;
 
     // public methods
     var self = {
@@ -104,7 +105,7 @@
       },
       scrollToBottom:function () {
         //_shell.scrollTop(_shell.height());
-        _shell.animate({scrollTop:_shell.height()}, 1000);
+        _panel.animate({scrollTop:_view.height()}, 1000);
       }
     };
 
@@ -127,15 +128,15 @@
     }
 
     function init() {
-      if ($(_shell_id).length == 0) {
+      if ($(_shell_view_id).length == 0) {
         _active = false;
         return;
       }
       if ($(_input_id).length == 0) {
-        $(_shell_id).append(_input_html);
+        $(_shell_view_id).append(_input_html);
       }
-      _shell = $(_shell_id);
-      _shell.css('overflow', 'scroll');
+      _view = $(_shell_view_id);
+      _panel = $(_shell_panel_id);
     }
 
     // init
@@ -148,7 +149,7 @@
       if (_onCmd) {
         _onCmd(cmd, _input_id, function (prompt) {
           $(_input_id).removeAttr('id');
-          $(_shell_id).append(_input_html);
+          $(_shell_view_id).append(_input_html);
           if (prompt) {
             self.setPrompt(prompt);
           }

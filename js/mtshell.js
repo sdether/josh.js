@@ -6,7 +6,7 @@
       shellConfig.history = config.history;
     }
     var _shell = new Shell(shellConfig);
-    var _commandList = _.sortBy(['go', 'ls', 'cd', 'show', 'pwd', 'help'], function(x) {
+    var _commandList = _.sortBy(['go', 'ls', 'cd', 'show', 'pwd', 'help','clear'], function(x) {
       return x;
     });
     var _namespaces = {
@@ -96,6 +96,10 @@
         cmd = "show";
       }
       switch(cmd) {
+        case "clear":
+          $(input_id).siblings().remove();
+          callback();
+          return;
         case "help":
           var content = $('<div><div><strong>Commands:</strong></div></div>');
           _.each(_commandList, function(command) {
