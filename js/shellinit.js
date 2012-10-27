@@ -6,32 +6,25 @@ shell = new MtShell({history: new ReadLine.History({storage: localStorage})});
     function showConsole() {
       mtConsole.slideDown();
       mtConsole.focus();
-    }
-
-    function hideConsole() {
-      console.log("slideup");
-      mtConsole.slideUp(1000, function() {
-        console.log("blur");
-        mtConsole.blur();
-      });
-    }
-
-    mtConsole.focus(function() {
       shell.activate();
       if(localStorage) {
         localStorage.setItem('mtShell.visible', true);
       }
-    });
-    mtConsole.blur(function() {
-      console.log("deactivating");
-      shell.deactivate();
+    }
+
+    function hideConsole() {
+      console.log("hiding");
       if(localStorage) {
         localStorage.setItem('mtShell.visible', false);
+        console.log("done storing state");
       }
-    });
-    function initShell() {
-
+      mtConsole.blur();
+      console.log("blurred");
+      mtConsole.slideUp(1000, function() {
+        console.log("done hiding");
+      });
     }
+
 
     if(localStorage) {
       var item = localStorage.getItem("mtShell.visible");
@@ -43,10 +36,8 @@ shell = new MtShell({history: new ReadLine.History({storage: localStorage})});
     $(document).on('keyup', function(e) {
       if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
         showConsole();
-      } else if(e.keyCode && e.keyCode === 27) {
-        console.log("hiding console");
-        hideConsole();
       }
     });
+    shell.onDeactivate(hideConsole);
   });
 })($);

@@ -38,6 +38,9 @@
       },
       deactivate: function() {
         _shell.deactivate();
+      },
+      onDeactivate: function(completionHandler) {
+        _shell.onDeactivate(completionHandler);
       }
     };
 

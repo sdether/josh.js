@@ -15,6 +15,7 @@
     var _active = false;
     var _cursor_visible = false;
     var _onCmd;
+    var _onDeactivate;
     var _suggestion;
     var _line = {
       text:'',
@@ -32,8 +33,12 @@
         blinkCursor();
       },
       deactivate:function () {
+        console.log("deactivating");
         _active = false;
         _readline.deactivate();
+        if(_onDeactivate) {
+          _onDeactivate();
+        }
       },
       setPrompt:function (prompt) {
         _prompt = prompt;
@@ -48,6 +53,9 @@
           return;
         }
         self.refresh();
+      },
+      onDeactivate: function(completionHandler) {
+        _onDeactivate = completionHandler;
       },
       onCmd:function (cmdHandler) {
         _onCmd = cmdHandler;
@@ -161,6 +169,16 @@
         callback();
       }
     });
+    function close() {
+      console.log("closing shell");
+      _readline.deactivate();
+      _activate = false;
+      if(_onDeactivate) {
+        _onDeactivate();
+      }
+    }
+    _readline.onEOT(self.deactivate);
+    _readline.onCancel(self.deactivate);
     return self;
   };
 })(jQuery, document, window);

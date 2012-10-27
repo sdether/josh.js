@@ -31,6 +31,8 @@
     var _onEnter;
     var _onKeydown;
     var _onChange;
+    var _onCancel;
+    var _onEOT;
     var _text = '';
     var _cursor = 0;
     var _strUtil = ReadLine.StrUtil;
@@ -60,6 +62,12 @@
       onCompletion: function(completionHandler) {
         _onCompletion = completionHandler;
       },
+      onCancel: function(completionHandler) {
+        _onCancel = completionHandler;
+      },
+      onEOT: function(completionHandler) {
+        _onEOT = completionHandler;
+      },
       getLine: function() {
         return {
           text: _text,
@@ -85,11 +93,11 @@
     }
 
     function queue(cmd) {
-      _cmdQueue.push(cmd);
       if(_suspended) {
+        _cmdQueue.push(cmd);
         return;
       }
-      call(_cmdQueue.shift());
+      call(cmd);
     }
 
     function call(cmd) {
@@ -191,11 +199,23 @@
     }
 
     function cmdDeleteChar() {
+      if(_text.length == 0 ) {
+        if(_onEOT) {
+          _onEOT();
+          return;
+        }
+      }
       if(_cursor == _text.length) {
         return;
       }
       _text = _strUtil.remove(_text, _cursor, _cursor + 1);
       refresh();
+    }
+
+    function cmdCancel() {
+      if(_onCancel) {
+        _onCancel();
+      }
     }
 
     function cmdKillToEOF() {
@@ -260,7 +280,7 @@
       if(!_active) {
         return true;
       }
-      //console.log("keydown - code: " + e.keyCode);
+
       var handled = true;
       switch(e.keyCode) {
         case 8:  // Backspace
@@ -317,12 +337,20 @@
               queue(cmdHome);
               handled = true;
               break;
-            case 69: // E
-              queue(cmdEnd);
-              handled = true;
-              break;
             case 66: // B
               queue(cmdLeft);
+              handled = true;
+              break;
+            case 67: // C
+              queue(cmdCancel);
+              handled = true;
+              break;
+            case 68: // D
+              queue(cmdDeleteChar);
+              handled = true;
+              break;
+            case 69: // E
+              queue(cmdEnd);
               handled = true;
               break;
             case 70: // F
@@ -343,10 +371,6 @@
               break;
             case 89: // Y
               queue(cmdYank);
-              handled = true;
-              break;
-            case 68: // D
-              queue(cmdDeleteChar);
               handled = true;
               break;
             case 76: // L
@@ -392,7 +416,7 @@
       if(!_active) {
         return true;
       }
-      //console.log("keypress - code: " + e.keyCode + ", char: " + String.fromCharCode(e.keyCode) + ", ctrl: " + e.ctrlKey);
+
       var key = getKeyInfo(e);
       queue(function cmdKeyPress() {
         addText(key.char);

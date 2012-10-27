@@ -8,18 +8,20 @@
     <script src="js/readline.js"></script>
     <script src="js/shell.js"></script>
     <style type="text/css">
-        #quake-console {
+        #shell {
             display: none;
             height: 400px;
             width: 100%;
-            opacity: 0.9;
-            background-color: gray;
-            color: white;
+            opacity: 0.8;
+            background-color: #002f05;
+            color: #00fe00;
             position: fixed;
             padding: 20px 20px 20px 20px;
             top: 0;
             z-index: 1000;
-        }</style>
+            overflow: hidden;
+        }
+    </style>
     <script type="text/javascript">
         var history = new ReadLine.History();
         var shell = new Shell();
@@ -38,12 +40,6 @@
         };
 
         $(document).ready(function() {
-//             r.onKeydown(function (key) {
-//                $('#debug').text(JSON.stringify(key));
-//            });
-//            r.onChange(function (line) {
-//                $('#line-input').text(line.text);
-//            });
             var quakeConsole = $('#quake-console');
             $(document).on('keyup', function(e) {
                 if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
