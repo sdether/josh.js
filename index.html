@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<html>
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -8,19 +8,19 @@
     <script src="js/readline.js"></script>
     <script src="js/shell.js"></script>
     <style type="text/css">
-        #shell {
-            display: none;
-            height: 400px;
-            width: 100%;
-            opacity: 0.8;
-            background-color: #002f05;
-            color: #00fe00;
-            position: fixed;
-            padding: 20px 20px 20px 20px;
-            top: 0;
-            z-index: 1000;
-            overflow: hidden;
-        }
+    #shell-panel {
+        display: none;
+        height: 400px;
+        width: 100%;
+        opacity: 0.8;
+        background-color: #002f05;
+        color: #00fe00;
+        position: fixed;
+        padding: 20px 20px 20px 20px;
+        top: 0;
+        z-index: 1000;
+        overflow: hidden;
+    }
     </style>
     <script type="text/javascript">
         var history = new ReadLine.History();
@@ -141,46 +141,8 @@
     </script>
 </head>
 <body>
-<div id="quake-console">
-    <div id="line">jsh$ <span id="line-input"></span></div>
-</div>
-<div id="shell"></div>
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<p>&nbsp;</p>
-
-<h2>Key event:</h2>
-<pre id="debug"></pre>
-<div id="x"></div>
-<div id="keydown"></div>
-<div id="keypress"></div>
-<script>
-    //    document.onkeydown = function (e) {
-    //        $('#keydown').text("keydown - code: "+ e.keyCode);
-    //        return true;
-    //    }
-    //    document.onkeypress = function(e) {
-    //        $('#keypress').text("keypress - code: "+ e.keyCode+", char: "+ String.fromCharCode(e.keyCode)+", ctrl: "+ e.ctrlKey);
-    //        return true;
-    //    }
-</script>
+<div id="shell-panel">
+    <div id="shell-view"></div>
+    </div>
 </body>
 </html>

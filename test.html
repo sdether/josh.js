@@ -3,20 +3,6 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
 <script>
-function genNamedCallback(callback) {
-    var id =1;
-    if(window.hasOwnProperty('_callback_id')) {
-      id = ++window['_callback_id'];
-    } else {
-      window['_callback_id'] = id;
-    }
-    var name = '_dyncallback_'+id;
-    window[name] = function(response) {
-      delete window[name];
-      callback(response);
-    };
-    return name;
-}
 $(document).ready(function() {
     $.getJSON("https://api.github.com/repos/sdether/shell.js/git/trees/master?callback=?", function(data) {
        $("#response").text(JSON.stringify(data));

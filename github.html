@@ -8,7 +8,7 @@
     <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
     <script src="js/readline.js"></script>
     <script src="js/shell.js"></script>
-    <script src="js/mtshell.js"></script>
+    <script src="js/github.js"></script>
     <style type="text/css">
         #mt-console {
             display: none;
@@ -25,16 +25,16 @@
         }</style>
     <script type="text/javascript">
         var history = new ReadLine.History();
-        var shell = new MtShell();
+        var shell = new GitHubShell();
         $(document).ready(function() {
-            var mtConsole = $('#mt-console');
+            var console = $('#gh-console');
             function showConsole() {
-                mtConsole.slideDown();
-                mtConsole.focus();
+                console.slideDown();
+                console.focus();
             }
             function hideConsole() {
-                mtConsole.slideUp();
-                mtConsole.blur();
+                console.slideUp();
+                console.blur();
             }
             $(document).on('keyup', function(e) {
                 if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
@@ -43,21 +43,18 @@
                     hideConsole();
                 }
             });
-            mtConsole.focus(function() {
+            console.focus(function() {
                 shell.activate();
             });
-            mtConsole.blur(function() {
+            console.blur(function() {
                 shell.deactivate();
             });
             showConsole();
-            $.getJSON('http://ariel.mindtouch.com/@api/deki/console/matches?path=./', function(data) {
-                console.log(JSON.stringify(data));
-            });
         });
     </script>
 </head>
 <body>
-<div id="mt-console">
+<div id="gh-console">
     <div id="shell"></div>
 </div>
 </body>
