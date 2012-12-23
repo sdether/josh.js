@@ -1,10 +1,10 @@
 (function($, _, document, window, localStorage) {
   GitHubShell = function(config) {
     config = config || {};
-    var shellConfig = {};
-    if(config.history) {
-      shellConfig.history = config.history;
-    }
+    _history = config.history || ReadLine.History();
+    var shellConfig = {
+      history: _history
+    };
     if(config.shell_view_id) {
       shellConfig.shell_view_id = config.shell_view_id;
     } else {
@@ -82,12 +82,21 @@
           return;
         case "help":
           var content = $('<div><div><strong>Commands:</strong></div></div>');
+          var itemTemplate =_.template('<div>&nbsp;<%=command%></div>');
           _.each(_commandList, function(command) {
-            content.append(_.template('<div>&nbsp;<%=command%></div>', {command: command}))
+            content.append(itemTemplate({command: command}))
           });
           $(input_id).after(content);
           callback();
           return;
+        case "history":
+          var content = $('<div></div>');
+          var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
+          _.each(_history.items(), function(cmd, i) {
+            content.append(itemTemplate({cmd: cmd, i: i}));
+          });
+          $(input_id).after(content);
+          callback();
         case "go":
           getPage(path, function(page) {
             var path = getPath(page);

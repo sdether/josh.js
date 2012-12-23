@@ -7,6 +7,7 @@
     var _shell_panel_id = config.shell_panel_id || '#shell-panel';
     var _input_id = config.input_id || '#shell-cli';
     var _input_html = config.input_html || '<div id="shell-cli"><strong class="prompt"></strong>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
+    var _search_html = config.search_html ||  '<div id="shell-cli">(reverse-i-search)`<span class="searchterm"></span>\':&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
     var _suggest_html = config.suggest_html || '<div id="shell-suggest"></div>';
     var _suggest_id = config.suggest_id = "#shell-suggest";
     var _blinktime = config.blinktime || 500;
@@ -21,6 +22,7 @@
       text:'',
       cursor:0
     };
+    var _searchTerm = '';
     var _view, _panel;
 
     // public methods
@@ -95,6 +97,7 @@
         var right = _line.text.substr(_line.cursor + 1);
         $(_input_id + ' .prompt').text(_prompt);
         $(_input_id + ' .input .left').text(left);
+        $(_input_id + ' .searchterm').text(_searchTerm)
         if (!cursor) {
           $(_input_id + ' .input .cursor').html('&nbsp;').css('textDecoration', 'underline');
         } else {
@@ -112,8 +115,8 @@
 
       },
       scrollToBottom:function () {
-        //_shell.scrollTop(_shell.height());
-        _panel.animate({scrollTop:_view.height()}, 1000);
+        //_panel.scrollTop(_shell.height());
+        _panel.animate({scrollTop:_view.height()},0);
       }
     };
 
@@ -151,6 +154,18 @@
     _readline.onChange(function (line) {
       _line = line;
       self.render();
+    });
+    _readline.onSearchStart(function() {
+      $(_input_id).replaceWith(_search_html);
+      console.log('started search');
+    });
+    _readline.onSearchEnd(function() {
+      $(_input_id).replaceWith(_input_html);
+      _searchTerm = '';
+      console.log("ended search");
+    });
+    _readline.onSearchChange(function(term) {
+      _searchTerm = term;
     });
     _readline.onEnter(function (cmd, line, callback) {
       console.log("got command: " + cmd);

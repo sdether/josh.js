@@ -33,6 +33,12 @@
     var _onChange;
     var _onCancel;
     var _onEOT;
+    var _onSearchStart;
+    var _onSearchEnd;
+    var _onSearchChange;
+    var _inSearch = false;
+    var _searchText = '';
+    var _lastSearchText = '';
     var _text = '';
     var _cursor = 0;
     var _strUtil = ReadLine.StrUtil;
@@ -68,6 +74,15 @@
       onEOT: function(completionHandler) {
         _onEOT = completionHandler;
       },
+      onSearchStart: function(completionHandler) {
+        _onSearchStart = completionHandler;
+      },
+      onSearchEnd: function(completionHandler) {
+        _onSearchEnd = completionHandler;
+      },
+      onSearchChange: function(completionHandler) {
+        _onSearchChange = completionHandler;
+      },
       getLine: function() {
         return {
           text: _text,
@@ -102,6 +117,12 @@
 
     function call(cmd) {
       console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
+      if(_inSearch && cmd.name != "cmdKeyPress" && cmd.name != "cmdReverseSearch") {
+        _inSearch = false;
+        if(_onSearchEnd) {
+          _onSearchEnd();
+        }
+      }
       _lastCmd = cmd.name;
       cmd();
     }
@@ -199,7 +220,7 @@
     }
 
     function cmdDeleteChar() {
-      if(_text.length == 0 ) {
+      if(_text.length == 0) {
         if(_onEOT) {
           _onEOT();
           return;
@@ -234,7 +255,21 @@
     }
 
     function cmdReverseSearch() {
-
+      if(!_inSearch) {
+        _inSearch = true;
+        if(_onSearchStart) {
+          _onSearchStart();
+        }
+      } else {
+        if(!_searchText) {
+          _searchText = _lastSearchText;
+        }
+        var match = _history.search(_searchText);
+        if(match != null && _onSearchChange) {
+          _onSearchChange(match);
+        }
+      }
+      refresh();
     }
 
     function cmdBackwardWord() {
@@ -463,6 +498,8 @@
 
     var _history = config.history || [''];
     var _cursor = config.cursor || 0;
+    var _searchCursor = _cursor;
+    var _lastSearchTerm = '';
     var _storage = config.storage;
     var _key = config.key || 'readline.history';
 
@@ -470,7 +507,7 @@
       var data = _storage.getItem(_key);
       if(data) {
         _history = JSON.parse(data);
-        _cursor = _history.length - 1;
+        _searchCursor = _cursor = _history.length - 1;
       } else {
         save();
       }
@@ -493,8 +530,11 @@
           _history.push(text);
         }
         _history.push('');
-        _cursor = _history.length - 1;
+        _searchCursor = _cursor = _history.length - 1;
         save();
+      },
+      items: function() {
+        return _history.slice(0, _history.length - 1);
       },
       hasNext: function() {
         return _cursor < (_history.length - 1);
@@ -504,11 +544,37 @@
       },
       prev: function() {
         --_cursor;
+        _searchCursor = _cursor;
+        _lastSearchTerm = '';
         return _history[_cursor];
       },
       next: function() {
         ++_cursor;
+        _searchCursor = _cursor;
+        _lastSearchTerm = '';
         return _history[_cursor];
+      },
+      search: function(term) {
+        if(term != _lastSearchTerm) {
+          _lastSearchTerm = term;
+          if(_history[_searchCursor].indexOf(term) != -1) {
+            return _history[_searchCursor];
+          }
+        }
+        var current = _searchCursor;
+        _searchCursor--;
+        console.log("current: " + current);
+        for(; _searchCursor != current; _searchCursor--) {
+          if(_searchCursor < 0) {
+            _searchCursor = _history.length - 1;
+          }
+          var idx = _history[_searchCursor].indexOf(term);
+          console.log("cursor: " + _searchCursor + ", line: " + _history[_searchCursor] + ", term: " + term + ", idx: " + idx);
+          if(_history[_searchCursor].indexOf(term) != -1) {
+            return _history[_searchCursor];
+          }
+        }
+        return null;
       }
     };
   };
