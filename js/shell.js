@@ -16,13 +16,12 @@
     var _active = false;
     var _cursor_visible = false;
     var _onCmd;
-    var _onDeactivate;
     var _suggestion;
     var _line = {
       text:'',
       cursor:0
     };
-    var _searchTerm = '';
+    var _searchMatch = '';
     var _view, _panel;
 
     // public methods
@@ -38,9 +37,9 @@
         console.log("deactivating");
         _active = false;
         _readline.deactivate();
-        if(_onDeactivate) {
-          _onDeactivate();
-        }
+//        if(_onDeactivate) {
+//          _onDeactivate();
+//        }
       },
       setPrompt:function (prompt) {
         _prompt = prompt;
@@ -56,8 +55,11 @@
         }
         self.refresh();
       },
+      onActivate: function(completionHandler) {
+        _readline.onActivate(completionHandler);
+      },
       onDeactivate: function(completionHandler) {
-        _onDeactivate = completionHandler;
+        _readline.onDeactivate(completionHandler);
       },
       onCmd:function (cmdHandler) {
         _onCmd = cmdHandler;
@@ -92,12 +94,18 @@
         });
       },
       render:function () {
-        var left = _line.text.substr(0, _line.cursor);
-        var cursor = _line.text.substr(_line.cursor, 1);
-        var right = _line.text.substr(_line.cursor + 1);
+        var text = _line.text || '';
+        var cursorIdx = _line.cursor || 0;
+        if(_searchMatch) {
+          cursorIdx = _searchMatch.cursoridx || 0;
+          text = _searchMatch.text || '';
+          $(_input_id + ' .searchterm').text(_searchMatch.term);
+        }
+        var left = text.substr(0, cursorIdx);
+        var cursor = text.substr(cursorIdx, 1);
+        var right = text.substr(cursorIdx + 1);
         $(_input_id + ' .prompt').text(_prompt);
         $(_input_id + ' .input .left').text(left);
-        $(_input_id + ' .searchterm').text(_searchTerm)
         if (!cursor) {
           $(_input_id + ' .input .cursor').html('&nbsp;').css('textDecoration', 'underline');
         } else {
@@ -106,7 +114,7 @@
         $(_input_id + ' .input .right').text(right);
         _cursor_visible = true;
         self.scrollToBottom();
-        console.log('rendered "' + _line.text + '" w/ cursor at ' + _line.cursor);
+        console.log('rendered "' + text + '" w/ cursor at ' + cursorIdx);
       },
       refresh:function () {
         $(_input_id).replaceWith(_input_html);
@@ -161,12 +169,15 @@
     });
     _readline.onSearchEnd(function() {
       $(_input_id).replaceWith(_input_html);
-      _searchTerm = '';
+      _searchMatch = null;
+      self.render();
       console.log("ended search");
     });
-    _readline.onSearchChange(function(term) {
-      _searchTerm = term;
+    _readline.onSearchChange(function(match) {
+      _searchMatch = match;
+      self.render();
     });
+
     _readline.onEnter(function (cmd, line, callback) {
       console.log("got command: " + cmd);
       if (_onCmd) {
@@ -187,10 +198,9 @@
     function close() {
       console.log("closing shell");
       _readline.deactivate();
-      _activate = false;
-      if(_onDeactivate) {
-        _onDeactivate();
-      }
+//      if(_onDeactivate) {
+//        _onDeactivate();
+//      }
     }
     _readline.onEOT(self.deactivate);
     _readline.onCancel(self.deactivate);

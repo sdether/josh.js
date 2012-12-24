@@ -31,6 +31,12 @@
         var shell = new GitHubShell({history: history});
         $(document).ready(function() {
             var console = $('#shell-panel');
+            shell.onActivate(function() {
+               showConsole();
+            });
+            shell.onDeactivate(function() {
+               hideConsole();
+            });
             function showConsole() {
                 console.slideDown();
                 console.focus();
@@ -39,20 +45,13 @@
                 console.slideUp();
                 console.blur();
             }
-            $(document).on('keyup', function(e) {
-                if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
-                    showConsole();
-                } else if(e.keyCode && e.keyCode === 27) {
-                    hideConsole();
-                }
-            });
-            console.focus(function() {
-                shell.activate();
-            });
-            console.blur(function() {
-                shell.deactivate();
-            });
-            showConsole();
+//            console.focus(function() {
+//                shell.activate();
+//            });
+//            console.blur(function() {
+//                shell.deactivate();
+//            });
+            shell.activate();
         });
     </script>
 </head>

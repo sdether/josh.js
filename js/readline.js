@@ -26,7 +26,11 @@
     var _window = config.window || window;
     var _document = config.document || document;
     var _history = config.history || new ReadLine.History();
+    var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true };
+    var _deactivationKey = config.deactivationKey || { keyCode: 27 };
     var _active = false;
+    var _onActivate;
+    var _onDeactivate;
     var _onCompletion;
     var _onEnter;
     var _onKeydown;
@@ -37,7 +41,7 @@
     var _onSearchEnd;
     var _onSearchChange;
     var _inSearch = false;
-    var _searchText = '';
+    var _searchMatch;
     var _lastSearchText = '';
     var _text = '';
     var _cursor = 0;
@@ -52,9 +56,21 @@
     var self = {
       activate: function() {
         _active = true;
+        if(_onActivate) {
+          _onActivate();
+        }
       },
       deactivate: function() {
         _active = false;
+        if(_onDeactivate) {
+          _onDeactivate();
+        }
+      },
+      onActivate: function(completionHandler) {
+        _onActivate = completionHandler;
+      },
+      onDeactivate: function(completionHandler) {
+        _onDeactivate = completionHandler;
       },
       onKeydown: function(keydownHandler) {
         _onKeydown = keydownHandler;
@@ -119,6 +135,17 @@
       console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
       if(_inSearch && cmd.name != "cmdKeyPress" && cmd.name != "cmdReverseSearch") {
         _inSearch = false;
+        if(cmd.name == 'cmdCancelSearch') {
+          _searchMatch = null;
+        }
+        if(_searchMatch) {
+          if(_searchMatch.text) {
+            _cursor = _searchMatch.cursoridx;
+            _text = _searchMatch.text;
+            _history.applySearch();
+          }
+          _searchMatch = null;
+        }
         if(_onSearchEnd) {
           _onSearchEnd();
         }
@@ -127,7 +154,11 @@
       cmd();
     }
 
-    function cmdBackpace() {
+    function cmdCancelSearch() {
+      // do nothing.. action for this was already taken in call()
+    }
+
+    function cmdBackspace() {
       if(_cursor == 0) {
         return;
       }
@@ -260,16 +291,15 @@
         if(_onSearchStart) {
           _onSearchStart();
         }
+        if(_onSearchChange) {
+          _onSearchChange({});
+        }
       } else {
-        if(!_searchText) {
-          _searchText = _lastSearchText;
+        if(!_searchMatch) {
+          _searchMatch = {term: ''};
         }
-        var match = _history.search(_searchText);
-        if(match != null && _onSearchChange) {
-          _onSearchChange(match);
-        }
+        search();
       }
-      refresh();
     }
 
     function cmdBackwardWord() {
@@ -291,6 +321,26 @@
       refresh();
     }
 
+    function addSearchText(c) {
+      if(!_searchMatch) {
+        _searchMatch = {term: ''};
+      }
+      _searchMatch.term += c;
+      search();
+    }
+
+    function search() {
+      console.log("searchtext: " + _searchMatch.term);
+      var match = _history.search(_searchMatch.term);
+      if(match != null) {
+        _searchMatch = match;
+        console.log("match: " + match);
+        if(_onSearchChange) {
+          _onSearchChange(match);
+        }
+      }
+    }
+
     function refresh() {
       if(_completionActive) {
         _completionActive = false;
@@ -309,23 +359,47 @@
       updateCursor(_text.length);
     }
 
+    function checkKeyMatch(a,b) {
+      return a.keyCode == b.keyCode
+        && Boolean(a.shiftKey) == Boolean(b.shiftKey)
+        && Boolean(a.ctrlKey) == Boolean(b.ctrlKey)
+        && Boolean(a.altKey) == Boolean(b.altKey);
+    }
+
     // set up key capture
     document.onkeydown = function(e) {
-      e = e || window.event
-      if(!_active) {
+      e = e || window.event;
+
+      // check if the keypress is an the activation key
+      if(!_active && checkKeyMatch(e,_activationKey)) {
+        self.activate();
+        return false;
+      }
+
+      // return as unhandled if we're not active or the key is just a modifier key
+      if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18) {
         return true;
       }
 
       var handled = true;
+
+      // check keys special keys, regardless of modifiers
       switch(e.keyCode) {
         case 8:  // Backspace
-          queue(cmdBackpace);
+          queue(cmdBackspace);
           break;
         case 9:  // Tab
           queue(cmdComplete);
           break;
         case 13: // Enter
           queue(cmdDone);
+          break;
+        case 27: // Esc
+          if(_inSearch) {
+            queue(cmdCancelSearch);
+          } else {
+            handled = false;
+          }
           break;
         case 35: // End
           queue(cmdEnd);
@@ -352,7 +426,6 @@
         // these we catch and have no commands for
         case 10: // Pause
         case 19: // Caps Lock
-        case 27: // Esc
         case 33: // Page Up
         case 34: // Page Down
         case 45: // Insert
@@ -431,6 +504,10 @@
         }
       }
       if(!handled) {
+        if(checkKeyMatch(e,_deactivationKey)) {
+          self.deactivate();
+          return false;
+        }
         return true;
       }
       var info = getKeyInfo(e);
@@ -454,7 +531,11 @@
 
       var key = getKeyInfo(e);
       queue(function cmdKeyPress() {
-        addText(key.char);
+        if(_inSearch) {
+          addSearchText(key.char);
+        } else {
+          addText(key.char);
+        }
         if(_onKeydown) {
           _onKeydown(key);
         }
@@ -520,21 +601,32 @@
 
     return {
       update: function(text) {
+        console.log("updating history to "+text);
         _history[_cursor] = text;
         save();
       },
       accept: function(text) {
-        if(_cursor == _history.length - 1) {
-          _history[_cursor] = text;
-        } else {
-          _history.push(text);
+        console.log("accepting history "+text);
+        var last = _history.length -1;
+        if(text) {
+          if(_cursor == last) {
+            _history[_cursor] = text;
+          } else if(!_history[last]) {
+            _history[last] = text;
+          } else {
+            _history.push(text);
+          }
+          _history.push('');
         }
-        _history.push('');
-        _searchCursor = _cursor = _history.length - 1;
+        _searchCursor = _cursor = last;
         save();
       },
       items: function() {
         return _history.slice(0, _history.length - 1);
+      },
+      clear: function() {
+        _history = [_history[_history.length - 1]];
+        save();
       },
       hasNext: function() {
         return _cursor < (_history.length - 1);
@@ -555,24 +647,39 @@
         return _history[_cursor];
       },
       search: function(term) {
-        if(term != _lastSearchTerm) {
-          _lastSearchTerm = term;
-          if(_history[_searchCursor].indexOf(term) != -1) {
-            return _history[_searchCursor];
-          }
+        if(!term && !_lastSearchTerm) {
+          return null;
         }
-        var current = _searchCursor;
-        _searchCursor--;
-        console.log("current: " + current);
-        for(; _searchCursor != current; _searchCursor--) {
+        var iterations = _history.length;
+        if(term == _lastSearchTerm) {
+          _searchCursor--;
+          iterations--;
+        }
+        if(!term) {
+          term = _lastSearchTerm;
+        }
+        _lastSearchTerm = term;
+        for(var i = 0; i < iterations; i++) {
           if(_searchCursor < 0) {
             _searchCursor = _history.length - 1;
           }
           var idx = _history[_searchCursor].indexOf(term);
-          console.log("cursor: " + _searchCursor + ", line: " + _history[_searchCursor] + ", term: " + term + ", idx: " + idx);
-          if(_history[_searchCursor].indexOf(term) != -1) {
-            return _history[_searchCursor];
+          if(idx != -1) {
+            return {
+              text: _history[_searchCursor],
+              cursoridx: idx,
+              term: term
+            };
           }
+          _searchCursor--;
+        }
+        return null;
+      },
+      applySearch: function() {
+        if(_lastSearchTerm) {
+          console.log("setting history to position"+_searchCursor+"("+_cursor+"): "+_history[_searchCursor]);
+          _cursor = _searchCursor;
+          return _history[_cursor];
         }
         return null;
       }

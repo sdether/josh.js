@@ -7,11 +7,9 @@
     };
     if(config.shell_view_id) {
       shellConfig.shell_view_id = config.shell_view_id;
-    } else {
-      config.shell_view_id
     }
     var _shell = new Shell(shellConfig);
-    var _commandList = _.sortBy(['go', 'ls', 'cd', 'show', 'pwd', 'help','clear'], function(x) {
+    var _commandList = _.sortBy(['go', 'ls', 'cd', 'show', 'pwd', 'help', 'clear'], function(x) {
       return x;
     });
     var _namespaces = {
@@ -35,6 +33,9 @@
       },
       onDeactivate: function(completionHandler) {
         _shell.onDeactivate(completionHandler);
+      },
+      onActivate: function(completionHandler) {
+        _shell.onActivate(completionHandler);
       }
     };
 
@@ -82,7 +83,7 @@
           return;
         case "help":
           var content = $('<div><div><strong>Commands:</strong></div></div>');
-          var itemTemplate =_.template('<div>&nbsp;<%=command%></div>');
+          var itemTemplate = _.template('<div>&nbsp;<%=command%></div>');
           _.each(_commandList, function(command) {
             content.append(itemTemplate({command: command}))
           });
@@ -90,13 +91,18 @@
           callback();
           return;
         case "history":
-          var content = $('<div></div>');
-          var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
-          _.each(_history.items(), function(cmd, i) {
-            content.append(itemTemplate({cmd: cmd, i: i}));
-          });
-          $(input_id).after(content);
+          if(parts[1] == "-c") {
+            _history.clear();
+          } else {
+            var content = $('<div></div>');
+            var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
+            _.each(_history.items(), function(cmd, i) {
+              content.append(itemTemplate({cmd: cmd, i: i}));
+            });
+            $(input_id).after(content);
+          }
           callback();
+          return;
         case "go":
           getPage(path, function(page) {
             var path = getPath(page);
