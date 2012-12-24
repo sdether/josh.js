@@ -236,6 +236,48 @@
       updateCursor(_cursor + 1);
     }
 
+    function cmdBackwardWord() {
+      if(_cursor == 0) {
+        return;
+      }
+      var previousWhitespace = 0;
+      var findNonWhiteSpace = _text[_cursor] == ' ' || _text[_cursor - 1] == ' ';
+      for(var i = _cursor - 1; i > 0; i--) {
+        if(findNonWhiteSpace) {
+          if(_text[i] != ' ') {
+            findNonWhiteSpace = false;
+          }
+        } else {
+          if(_text[i] == ' ') {
+            previousWhitespace = i+1;
+            break;
+          }
+        }
+      }
+      updateCursor(previousWhitespace);
+    }
+
+    function cmdForwardWord() {
+      if(_cursor == _text.length) {
+        return;
+      }
+      var nextWhitespace = _text.length;
+      var findNonWhitespace = _text[_cursor] == ' ';
+      for(var i = _cursor + 1; i < _text.length; i++) {
+        if(findNonWhitespace) {
+          if(_text[i] != ' ') {
+            findNonWhitespace = false;
+          }
+        } else {
+          if(_text[i] == ' ') {
+            nextWhitespace = i;
+            break;
+          }
+        }
+      }
+      updateCursor(nextWhitespace);
+    }
+
     function cmdHistoryPrev() {
       if(!_history.hasPrev()) {
         return;
@@ -248,6 +290,14 @@
         return;
       }
       getHistory(_history.next);
+    }
+
+    function cmdHistoryTop() {
+      getHistory(_history.top);
+    }
+
+    function cmdHistoryEnd() {
+      getHistory(_history.end);
     }
 
     function cmdDeleteChar() {
@@ -302,14 +352,6 @@
       }
     }
 
-    function cmdBackwardWord() {
-
-    }
-
-    function cmdForwardWord() {
-
-    }
-
     function updateCursor(position) {
       _cursor = position;
       refresh();
@@ -359,7 +401,7 @@
       updateCursor(_text.length);
     }
 
-    function checkKeyMatch(a,b) {
+    function checkKeyMatch(a, b) {
       return a.keyCode == b.keyCode
         && Boolean(a.shiftKey) == Boolean(b.shiftKey)
         && Boolean(a.ctrlKey) == Boolean(b.ctrlKey)
@@ -371,7 +413,7 @@
       e = e || window.event;
 
       // check if the keypress is an the activation key
-      if(!_active && checkKeyMatch(e,_activationKey)) {
+      if(!_active && checkKeyMatch(e, _activationKey)) {
         self.activate();
         return false;
       }
@@ -401,6 +443,12 @@
             handled = false;
           }
           break;
+        case 33: // Page Up
+          queue(cmdHistoryTop);
+          break;
+        case 34: // Page Down
+          queue(cmdHistoryEnd);
+          break;
         case 35: // End
           queue(cmdEnd);
           break;
@@ -426,8 +474,6 @@
         // these we catch and have no commands for
         case 10: // Pause
         case 19: // Caps Lock
-        case 33: // Page Up
-        case 34: // Page Down
         case 45: // Insert
           break;
 
@@ -504,7 +550,7 @@
         }
       }
       if(!handled) {
-        if(checkKeyMatch(e,_deactivationKey)) {
+        if(checkKeyMatch(e, _deactivationKey)) {
           self.deactivate();
           return false;
         }
@@ -599,26 +645,35 @@
       }
     }
 
+    function setHistory() {
+      _searchCursor = _cursor;
+      _lastSearchTerm = '';
+      return _history[_cursor];
+    }
+
     return {
       update: function(text) {
-        console.log("updating history to "+text);
+        console.log("updating history to " + text);
         _history[_cursor] = text;
         save();
       },
       accept: function(text) {
-        console.log("accepting history "+text);
-        var last = _history.length -1;
+        console.log("accepting history " + text);
+        var last = _history.length - 1;
         if(text) {
           if(_cursor == last) {
+            console.log("we're at the end already, update last position");
             _history[_cursor] = text;
           } else if(!_history[last]) {
+            console.log("we're not at the end, but the end was blank, so update last position");
             _history[last] = text;
           } else {
+            console.log("appending to end");
             _history.push(text);
           }
           _history.push('');
         }
-        _searchCursor = _cursor = last;
+        _searchCursor = _cursor = _history.length - 1;
         save();
       },
       items: function() {
@@ -636,15 +691,19 @@
       },
       prev: function() {
         --_cursor;
-        _searchCursor = _cursor;
-        _lastSearchTerm = '';
-        return _history[_cursor];
+        return setHistory();
       },
       next: function() {
         ++_cursor;
-        _searchCursor = _cursor;
-        _lastSearchTerm = '';
-        return _history[_cursor];
+        return setHistory();
+      },
+      top: function() {
+        _cursor = 0;
+        return setHistory();
+      },
+      end: function() {
+        _cursor = _history.length - 1;
+        return setHistory();
       },
       search: function(term) {
         if(!term && !_lastSearchTerm) {
@@ -677,7 +736,7 @@
       },
       applySearch: function() {
         if(_lastSearchTerm) {
-          console.log("setting history to position"+_searchCursor+"("+_cursor+"): "+_history[_searchCursor]);
+          console.log("setting history to position" + _searchCursor + "(" + _cursor + "): " + _history[_searchCursor]);
           _cursor = _searchCursor;
           return _history[_cursor];
         }

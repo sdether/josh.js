@@ -1,4 +1,4 @@
-(function ($, document, window) {
+(function ($, _, document, window) {
   Shell = function (config) {
     config = config || {};
     // instance fields
@@ -101,17 +101,17 @@
           text = _searchMatch.text || '';
           $(_input_id + ' .searchterm').text(_searchMatch.term);
         }
-        var left = text.substr(0, cursorIdx);
+        var left = _.escape(text.substr(0, cursorIdx)).replace(/ /g,'&nbsp;');
         var cursor = text.substr(cursorIdx, 1);
-        var right = text.substr(cursorIdx + 1);
+        var right = _.escape(text.substr(cursorIdx + 1)).replace(/ /g,'&nbsp;');
         $(_input_id + ' .prompt').text(_prompt);
-        $(_input_id + ' .input .left').text(left);
+        $(_input_id + ' .input .left').html(left);
         if (!cursor) {
           $(_input_id + ' .input .cursor').html('&nbsp;').css('textDecoration', 'underline');
         } else {
           $(_input_id + ' .input .cursor').text(cursor).css('textDecoration', 'underline');
         }
-        $(_input_id + ' .input .right').text(right);
+        $(_input_id + ' .input .right').html(right);
         _cursor_visible = true;
         self.scrollToBottom();
         console.log('rendered "' + text + '" w/ cursor at ' + cursorIdx);
@@ -182,6 +182,7 @@
       console.log("got command: " + cmd);
       if (_onCmd) {
         _onCmd(cmd, _input_id, function (prompt) {
+          $(_input_id + ' .input .cursor').css('textDecoration', '');
           $(_input_id).removeAttr('id');
           $(_shell_view_id).append(_input_html);
           if (prompt) {
@@ -206,4 +207,4 @@
     _readline.onCancel(self.deactivate);
     return self;
   };
-})(jQuery, document, window);
+})(jQuery, _, document, window);
