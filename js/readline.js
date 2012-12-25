@@ -195,8 +195,18 @@
         return;
       }
       suspend(function(resumeCallback) {
-        _onEnter(text, self.getLine(), resumeCallback);
+        _onEnter(text, function(text) {
+          if(text) {
+            _text = text;
+            _cursor = _text.length;
+          }
+          if(_onChange) {
+            _onChange(self.getLine());
+          }
+          resumeCallback();
+        });
       });
+
     }
 
     function suspend(asyncCall) {
@@ -249,7 +259,7 @@
           }
         } else {
           if(_text[i] == ' ') {
-            previousWhitespace = i+1;
+            previousWhitespace = i + 1;
             break;
           }
         }

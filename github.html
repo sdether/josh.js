@@ -28,7 +28,7 @@
         }</style>
     <script type="text/javascript">
         var history = ReadLine.History({storage: localStorage});
-        var shell = new GitHubShell({history: history});
+        var shell = new Shell({history: history});
         $(document).ready(function() {
             var console = $('#shell-panel');
             shell.onActivate(function() {
@@ -45,12 +45,6 @@
                 console.slideUp();
                 console.blur();
             }
-//            console.focus(function() {
-//                shell.activate();
-//            });
-//            console.blur(function() {
-//                shell.deactivate();
-//            });
             shell.activate();
         });
     </script>
