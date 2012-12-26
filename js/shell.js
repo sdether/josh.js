@@ -28,26 +28,24 @@
         _.each(commands(), function(command) {
           content.append(itemTemplate({command: command}))
         });
-        $(_input_id).after(content);
-        callback();
+        callback(content);
       },
       history: function(cmd, args, callback) {
         if(args[0] == "-c") {
           _history.clear();
-        } else {
-          var content = $('<div></div>');
-          var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
-          _.each(_history.items(), function(cmd, i) {
-            content.append(itemTemplate({cmd: cmd, i: i}));
-          });
-          $(_input_id).after(content);
+          callback();
+          return;
         }
-        callback();
+        var content = $('<div></div>');
+        var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
+        _.each(_history.items(), function(cmd, i) {
+          content.append(itemTemplate({cmd: cmd, i: i}));
+        });
+        callback(content);
       },
       _unknown: function(cmd, args, callback) {
         var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
-        $(_input_id).after(content);
-        callback();
+        callback(content);
       }
     };
     var _line = {
@@ -233,8 +231,11 @@
           handler = _cmdHandlers['_unknown'];
         }
       }
-      return handler(cmd, args, function(prompt, cmdtext) {
+      return handler(cmd, args, function(output, prompt, cmdtext) {
         console.log("finished command " + cmd);
+        if(output) {
+          $(_input_id).after(output);
+        }
         $(_input_id + ' .input .cursor').css('textDecoration', '');
         $(_input_id).removeAttr('id');
         $(_shell_view_id).append(_input_html);

@@ -4,145 +4,66 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>Shell testbed</title>
 
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-    <script src="js/readline.js"></script>
-    <script src="js/shell.js"></script>
-    <style type="text/css">
+<link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+<script src="js/readline.js"></script>
+<script src="js/shell.js"></script>
+<style type="text/css">
     #shell-panel {
         display: none;
         height: 400px;
         width: 100%;
-        opacity: 0.8;
+        opacity: 0.9;
         background-color: #002f05;
         color: #00fe00;
         position: fixed;
         padding: 20px 20px 20px 20px;
         top: 0;
         z-index: 1000;
+        font-family: 'Source Code Pro', sans-serif;
+        font-size: 0.9em;
         overflow: hidden;
-    }
-    </style>
-    <script type="text/javascript">
-        var history = new ReadLine.History();
-        var shell = new Shell();
-        var dir = {
-            "Guide-Admin": {
-                "AccessControlPanel": {},
-                "AddingUsers": {},
-                "GettingStarted": {}
-            },
-            "Guide-User": {
-                "GettingStarted": {},
-                "ContentCreation": {},
-                "ContentManagement": {}
-            },
-            Reference: {}
-        };
-
-        $(document).ready(function() {
-            var quakeConsole = $('#quake-console');
-            $(document).on('keyup', function(e) {
-                if(e.keyCode && e.keyCode === 192 && e.shiftKey) {
-                    quakeConsole.slideDown();
-                    quakeConsole.focus();
-                } else if(e.keyCode && e.keyCode === 27) {
-                    quakeConsole.slideUp();
-                    quakeConsole.blur();
-                    console.log("blur");
-                }
-            });
-            quakeConsole.focus(function() {
-                shell.activate();
-            });
-            quakeConsole.blur(function() {
-                shell.deactivate();
-            });
-            shell.onCmd(function(cmd, input_id, callback) {
-                var content = $('<div><strong>Command:&nbsp;</strong><span class="cmd"></span></div>');
-                $(content).find('.cmd').text(cmd);
-                $(input_id).after(content);
-                window.setTimeout(callback, 1000);
-            });
-            shell.onCompletion(function(line, callback) {
-                console.log("slow completion");
-                window.setTimeout(function() {
-                    var match = line.text.substr(0, line.cursor);
-                    if(!match) {
-                        callback(bestMatch("", dir));
-                        return;
-                    }
-                    var parts = match.split(" ");
-                    var cur = dir;
-                    match = parts[parts.length - 1];
-                    var segments = match.split("/");
-                    var last = segments[segments.length - 1];
-                    for(var i = 0; i < segments.length; i++) {
-                        var segment = segments[i];
-                        if(!cur[segment]) {
-                            if(i == segments.length - 1) {
-
-                                // look for partial match
-                                callback(bestMatch(segment, cur));
-                            } else {
-
-                                // we can't even find a partial match, no completion
-                                callback();
-                            }
-                            return;
-                        }
-                        if(i == segments.length - 1) {
-                            // exact match on last segment, no completion
-                            callback();
-                            return;
-                        }
-                        cur = cur[segment];
-                    }
-                    callback();
-                }, 1000);
-            });
-            shell.activate();
+    }</style>
+<script type="text/javascript">
+    var dir = {
+        "Guide-Admin": {
+            "AccessControlPanel": {},
+            "AddingUsers": {},
+            "GettingStarted": {}
+        },
+        "Guide-User": {
+            "GettingStarted": {},
+            "ContentCreation": {},
+            "ContentManagement": {}
+        },
+        Reference: {}
+    };
+    var history = ReadLine.History({storage: localStorage});
+    var shell = Shell({history: history});
+    $(document).ready(function() {
+        var console = $('#shell-panel');
+        shell.onActivate(function() {
+            showConsole();
         });
-        function bestMatch(match, pwd) {
-            var completions = [];
-            var common = '';
-            for(var segment in pwd) {
-                if(!pwd.hasOwnProperty(segment)) {
-                    continue;
-                }
-                if(segment.slice(0, match.length) == match) {
-                    completions.push(segment);
-                    if(!common) {
-                        common = segment;
-                        console.log("initial common:" + common);
-                    } else if(segment.slice(0, common.length) != common) {
-                        console.log("find common stem for '" + common + "' and '" + segment + "'");
-                        var i = match.length;
-                        while(true) {
-                            if(common[i] != segment[i]) {
-                                common = common.substr(0, i);
-                                break;
-                            }
-                            i++;
-                        }
-                    }
-                }
-            }
-            if(completions.length == 0) {
-                return;
-            }
-            if(completions.length == 1) {
-                completions = null;
-            }
-            return {
-                result: common.substr(match.length),
-                suggestions: completions
-            };
+        shell.onDeactivate(function() {
+            hideConsole();
+        });
+        function showConsole() {
+            console.slideDown();
+            console.focus();
         }
-    </script>
+        function hideConsole() {
+            console.slideUp();
+            console.blur();
+        }
+        shell.activate();
+    });
+</script>
 </head>
 <body>
 <div id="shell-panel">
     <div id="shell-view"></div>
-    </div>
+</div>
 </body>
 </html>
