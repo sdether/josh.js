@@ -91,13 +91,6 @@
         }
         self.refresh();
       },
-      setInput: function(text, cursor) {
-        _line = {text: text, cursor: cursor};
-        if(!_active) {
-          return;
-        }
-        self.refresh();
-      },
       onActivate: function(completionHandler) {
         _readline.onActivate(completionHandler);
       },

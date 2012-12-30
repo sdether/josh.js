@@ -4,62 +4,159 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>Shell testbed</title>
 
-<link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
-<script src="js/readline.js"></script>
-<script src="js/shell.js"></script>
-<style type="text/css">
-    #shell-panel {
-        display: none;
-        height: 400px;
-        width: 100%;
-        opacity: 0.9;
-        background-color: #002f05;
-        color: #00fe00;
-        position: fixed;
-        padding: 20px 20px 20px 20px;
-        top: 0;
-        z-index: 1000;
-        font-family: 'Source Code Pro', sans-serif;
-        font-size: 0.9em;
-        overflow: hidden;
-    }</style>
-<script type="text/javascript">
-    var dir = {
-        "Guide-Admin": {
-            "AccessControlPanel": {},
-            "AddingUsers": {},
-            "GettingStarted": {}
-        },
-        "Guide-User": {
-            "GettingStarted": {},
-            "ContentCreation": {},
-            "ContentManagement": {}
-        },
-        Reference: {}
-    };
-    var history = ReadLine.History({storage: localStorage});
-    var shell = Shell({history: history});
-    $(document).ready(function() {
-        var console = $('#shell-panel');
-        shell.onActivate(function() {
-            showConsole();
-        });
-        shell.onDeactivate(function() {
-            hideConsole();
-        });
-        function showConsole() {
-            console.slideDown();
-            console.focus();
+    <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+    <script src="js/readline.js"></script>
+    <script src="js/shell.js"></script>
+    <script src="js/pathhandler.js"></script>
+    <style type="text/css">
+        #shell-panel {
+            display: none;
+            height: 400px;
+            width: 100%;
+            opacity: 0.9;
+            background-color: #002f05;
+            color: #00fe00;
+            position: fixed;
+            padding: 20px 20px 20px 20px;
+            top: 0;
+            z-index: 1000;
+            font-family: 'Source Code Pro', sans-serif;
+            font-size: 0.9em;
+            overflow: hidden;
+        }</style>
+    <script type="text/javascript">
+        var fs = {
+            bin: {},
+            boot: {},
+            dev: {},
+            etc: {
+                default: {},
+                'rc.d': {},
+                sysconfig: {},
+                x11: {}
+            },
+            home: {
+                bob: {},
+                jane: {}
+            },
+            lib: {},
+            'lost+found': {},
+            misc: {},
+            mnt: {
+                cdrom: {},
+                sysimage: {}
+            },
+            net: {},
+            opt: {},
+            proc: {},
+            root: {},
+            sbin: {},
+            usr: {
+                x11: {},
+                bin: {},
+                include: {},
+                lib: {},
+                local: {},
+                man: {},
+                sbin: {},
+                share: {
+                    doc: {}
+                },
+                src: {}
+            },
+            var: {
+                lib: {},
+                lock: {},
+                run: {},
+                log: {
+                    httpd: {
+                        access_log: {},
+                        error_log: {}
+                    },
+                    'boot.log': {},
+                    cron: {},
+                    messages: {}
+                }
+            }
+        };
+        function buildTree(parent, node) {
+            parent.childnodes = _.map(_.pairs(node), function(pair) {
+                var child = {
+                    name: pair[0],
+                    path: parent.path + "/" + pair[0],
+                    parent: parent
+                };
+                buildTree(child, pair[1]);
+                return child;
+            });
+            parent.children = _.keys(node);
+            return parent;
         }
-        function hideConsole() {
-            console.slideUp();
-            console.blur();
+        function findNode(current, parts, callback) {
+            if(!parts || parts.length == 0) {
+                return callback(current);
+            }
+            if(parts[0] == ".") {
+                // do nothing
+            } else if(parts[0] == "..") {
+                current = current.parent;
+            } else {
+                current = _.first(_.filter(current.childnodes, function(node) {
+                    return node.name == parts[0];
+                }));
+            }
+            if(!current) {
+                return callback();
+            }
+            return findNode(current, _.rest(parts), callback);
         }
-        shell.activate();
-    });
-</script>
+        var root = buildTree({
+                    name: "",
+                    path: ""
+                },
+                fs
+        );
+        root.path = '/';
+        var history = ReadLine.History({storage: localStorage});
+        var shell = Shell({history: history});
+        var pathhandler = Josh.PathHandler();
+        pathhandler.current = root;
+        pathhandler.attach(shell);
+        pathhandler.getNode = function(path, callback) {
+            if(!path) {
+                return callback();
+            }
+            var parts = path.split('/');
+            return findNode(pathhandler.current, parts, callback);
+        };
+        pathhandler.getChildNodes = function(node, callback) {
+            console.log("children for "+node.name);
+            callback(node.childnodes);
+        };
+
+        $(document).ready(function() {
+            var console = $('#shell-panel');
+            shell.onActivate(function() {
+                showConsole();
+            });
+            shell.onDeactivate(function() {
+                hideConsole();
+            });
+            function showConsole() {
+                console.slideDown();
+                console.focus();
+            }
+
+            function hideConsole() {
+                console.slideUp();
+                console.blur();
+            }
+
+            shell.activate();
+        });
+    </script>
 </head>
 <body>
 <div id="shell-panel">
