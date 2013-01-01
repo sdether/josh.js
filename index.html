@@ -98,8 +98,10 @@
             if(!parts || parts.length == 0) {
                 return callback(current);
             }
-            if(parts[0] == ".") {
-                // do nothing
+            if(!parts[0]) {
+                current = root;
+            } else if(parts[0] == ".") {
+                // carry on
             } else if(parts[0] == "..") {
                 current = current.parent;
             } else {
@@ -123,7 +125,7 @@
         var shell = Shell({history: history});
         var pathhandler = Josh.PathHandler();
         pathhandler.current = root;
-        pathhandler.attach(shell);
+        //pathhandler.attach(shell);
         pathhandler.getNode = function(path, callback) {
             if(!path) {
                 return callback();

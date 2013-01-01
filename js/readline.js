@@ -394,12 +394,12 @@
     }
 
     function refresh() {
-      if(_completionActive) {
-        _completionActive = false;
-        if(_onCompletion) {
-          _onCompletion();
-        }
-      }
+//      if(_completionActive) {
+//        _completionActive = false;
+//        if(_onCompletion) {
+//          _onCompletion();
+//        }
+//      }
       if(_onChange) {
         _onChange(self.getLine());
       }

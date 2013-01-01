@@ -97,7 +97,7 @@
             var content = $('<div></div>');
             var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
             _.each(_history.items(), function(cmd, i) {
-              content.append(itemTemplate({cmd: cmd, i: i}));
+              content.append(itemTemplate({exec: cmd, i: i}));
             });
             $(input_id).after(content);
           }

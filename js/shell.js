@@ -17,35 +17,54 @@
     var _active = false;
     var _cursor_visible = false;
     var _suggestion;
+    var _itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
     var _cmdHandlers = {
-      clear: function(cmd, args, callback) {
-        $(_input_id).parent().empty();
-        callback();
-      },
-      help: function(cmd, args, callback) {
-        var content = $('<div><div><strong>Commands:</strong></div></div>');
-        var itemTemplate = _.template('<div>&nbsp;<%=command%></div>');
-        _.each(commands(), function(command) {
-          content.append(itemTemplate({command: command}))
-        });
-        callback(content);
-      },
-      history: function(cmd, args, callback) {
-        if(args[0] == "-c") {
-          _history.clear();
+      clear: {
+        exec: function(cmd, args, callback) {
+          $(_input_id).parent().empty();
           callback();
-          return;
         }
-        var content = $('<div></div>');
-        var itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
-        _.each(_history.items(), function(cmd, i) {
-          content.append(itemTemplate({cmd: cmd, i: i}));
-        });
-        callback(content);
       },
-      _unknown: function(cmd, args, callback) {
-        var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
-        callback(content);
+      help: {
+        exec: function(cmd, args, callback) {
+          var content = $('<div><div><strong>Commands:</strong></div></div>');
+          var itemTemplate = _.template('<div>&nbsp;<%=command%></div>');
+          _.each(commands(), function(command) {
+            content.append(itemTemplate({command: command}))
+          });
+          callback(content);
+        },
+        completion: function(cmd, arg, line, callback) {
+          callback(self.bestMatch(arg, self.commands()))
+        }
+      },
+      history: {
+        exec: function(cmd, args, callback) {
+          if(args[0] == "-c") {
+            _history.clear();
+            callback();
+            return;
+          }
+          var content = $('<div></div>');
+          _.each(_history.items(), function(cmd, i) {
+            content.append(_itemTemplate({cmd: cmd, i: i}));
+          });
+          callback(content);
+        }
+      },
+      _unknown: {
+        exec: function(cmd, args, callback) {
+          var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
+          callback(content);
+        },
+        completion: function(cmd, arg, line, callback) {
+          callback(self.bestMatch(arg, self.commands()))
+        }
+      },
+      _none: {
+        completion: function(cmd, arg, line, callback) {
+          callback(self.bestMatch(arg, self.commands()))
+        }
       }
     };
     var _line = {
@@ -84,6 +103,9 @@
       setCommandHandler: function(cmd, cmdHandler) {
         _cmdHandlers[cmd] = cmdHandler;
       },
+      getCommandHandler: function(cmd) {
+        return _cmdHandlers[cmd];
+      },
       setPrompt: function(prompt) {
         _prompt = prompt;
         if(!_active) {
@@ -96,35 +118,6 @@
       },
       onDeactivate: function(completionHandler) {
         _readline.onDeactivate(completionHandler);
-      },
-      onCompletion: function(completionHandler) {
-        _readline.onCompletion(function(line, callback) {
-          if(_suggestion) {
-            $(_suggest_id).remove();
-            _suggestion = null;
-          }
-          if(!line) {
-            return;
-          }
-          completionHandler(line, function(completion) {
-            console.log("completion: " + completion)
-            if(!completion) {
-              callback();
-              return;
-            }
-            if(completion.suggestions) {
-              _suggestion = $(_suggest_html);
-              for(var i = 0; i < completion.suggestions.length; i++) {
-                console.log("suggestion: " + completion.suggestions[i]);
-                _suggestion.append($("<div></div>").text(completion.suggestions[i]));
-              }
-              console.log(_suggestion);
-              $(_input_id).after(_suggestion);
-            }
-            self.scrollToBottom();
-            callback(completion.result);
-          });
-        });
       },
       render: function() {
         var text = _line.text || '';
@@ -158,6 +151,52 @@
       scrollToBottom: function() {
         //_panel.scrollTop(_shell.height());
         _panel.animate({scrollTop: _view.height()}, 0);
+      },
+      bestMatch: function(partial, possible) {
+        var result = {
+          completion: null,
+          suggestions: []
+        };
+        if(!possible || possible.length == 0) {
+          return result;
+        }
+        var common = '';
+        if(!partial) {
+          if(possible.length == 1) {
+            result.completion = possible[0];
+            result.suggestions = possible;
+            return result;
+          }
+          if(!_.every(possible, function(x) {
+            return possible[0][0] == x[0]
+          })) {
+            result.suggestions = possible;
+            return result;
+          }
+          common = possible[0][0];
+        }
+        for(var i = 0; i < possible.length; i++) {
+          var option = possible[i];
+          if(option.slice(0, partial.length) == partial) {
+            result.suggestions.push(option);
+            if(!common) {
+              common = option;
+              console.log("initial common:" + common);
+            } else if(option.slice(0, common.length) != common) {
+              console.log("find common stem for '" + common + "' and '" + option + "'");
+              var j = partial.length;
+              while(j < common.length && j < option.length) {
+                if(common[j] != option[j]) {
+                  common = common.substr(0, j);
+                  break;
+                }
+                j++;
+              }
+            }
+          }
+        }
+        result.completion = common.substr(partial.length);
+        return result;
       }
     };
 
@@ -186,15 +225,34 @@
     }
 
     function split(str) {
-      var parts = str.split(/\s+/);
-      if(parts.length > 0 && !parts[parts.length - 1]) {
-        parts.pop();
+      return _.filter(str.split(/\s+/), function(x) {
+        return x;
+      });
+    }
+
+    function getHandler(cmd) {
+      var handler;
+      if(!cmd) {
+        handler = _cmdHandlers._none;
+      } else {
+        handler = _cmdHandlers[cmd];
       }
-      return parts;
+      if(!handler) {
+        handler = _cmdHandlers._default;
+        if(!handler) {
+          handler = _cmdHandlers._unknown;
+        }
+      }
+      return handler;
     }
 
     // init
     _readline.onChange(function(line) {
+      if(_suggestion) {
+        $(_suggest_id).remove();
+        _suggestion = null;
+        self.scrollToBottom();
+      }
       _line = line;
       self.render();
     });
@@ -217,15 +275,8 @@
       var parts = split(cmdtext);
       var cmd = parts[0];
       var args = parts.slice(1);
-      var handler = _cmdHandlers[cmd];
-      if(!handler) {
-        handler = _cmdHandlers['_default'];
-        if(!handler) {
-          handler = _cmdHandlers['_unknown'];
-        }
-      }
-      return handler(cmd, args, function(output, prompt, cmdtext) {
-        console.log("finished command " + cmd);
+      var handler = getHandler(cmd);
+      return handler.exec(cmd, args, function(output, prompt, cmdtext) {
         if(output) {
           $(_input_id).after(output);
         }
@@ -238,10 +289,43 @@
         callback(cmdtext);
       });
     });
+    _readline.onCompletion(function(line, callback) {
+      if(_suggestion) {
+        $(_suggest_id).remove();
+        _suggestion = null;
+      }
+      if(!line) {
+        return callback();
+      }
+      var cmd = _.first(split(line.text));
+      console.log("getting completion handler for "+cmd);
+      var handler = getHandler(cmd);
+      if(!handler.completion) {
+        return callback();
+      }
+      console.log("calling completion handler for "+cmd);
+      var partial = line.text.substr(0, line.cursor);
+      var arg = _.last(split(partial));
+      return handler.completion(cmd, arg, line, function(match) {
+        console.log("completion: " + JSON.stringify(match));
+        if(!match) {
+          return callback();
+        }
+        if(match.suggestions) {
+          _suggestion = $(_suggest_html);
+          for(var i = 0; i < match.suggestions.length; i++) {
+            console.log("suggestion: " + match.suggestions[i]);
+            _suggestion.append($("<div></div>").text(match.suggestions[i]));
+          }
+          $(_input_id).after(_suggestion);
+        }
+        self.scrollToBottom();
+        return callback(match.completion);
+      });
+    });
     _readline.onEOT(self.deactivate);
     _readline.onCancel(self.deactivate);
     return self;
   }
   ;
-})
-  (jQuery, _, document, window);
+})(jQuery, _, document, window);

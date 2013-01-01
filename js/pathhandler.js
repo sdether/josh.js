@@ -4,17 +4,29 @@ var Josh = Josh || {};
     var self = {
       attach: function(shell) {
         shell.onCompletion(completionHandler);
-        shell.setCommandHandler("ls", ls);
-        shell.setCommandHandler("pwd", pwd);
-        shell.setCommandHandler("cd", cd);
-        shell.setCommandHandler("_default", exec);
+        shell.setCommandHandler("ls", self.handlers.ls);
+        shell.setCommandHandler("pwd", self.handlers.pwd);
+        shell.setCommandHandler("cd", self.handlers.cd);
+        shell.setCommandHandler("_default", self.handlers.exec);
         shell.setPrompt(self.getPrompt());
       },
       handlers: {
-        ls: ls,
-        exec: exec,
-        cd: cd,
-        pwd: pwd
+        ls: {
+          exec: ls,
+          completion: pathCompletionHandler
+        },
+        exec: {
+          exec: exec,
+          completion: pathCompletionHandler
+        },
+        cd: {
+          exec: cd,
+          completion: pathCompletionHandler
+        },
+        pwd: {
+          exec: pwd,
+          completion: pathCompletionHandler
+        }
       },
       templates: {
         not_found: _.template("<div><%=cmd%>: <%=path%>: No such file or directory</div>"),
@@ -49,6 +61,10 @@ var Josh = Josh || {};
       },
       current: null
     };
+
+    function pathCompletionHandler() {
+
+    }
 
     function exec(cmd, args, callback) {
       self.withPrompt(callback);
