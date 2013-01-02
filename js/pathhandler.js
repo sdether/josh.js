@@ -3,7 +3,6 @@ var Josh = Josh || {};
   Josh.PathHandler = function() {
     var self = {
       attach: function(shell) {
-        shell.onCompletion(completionHandler);
         shell.setCommandHandler("ls", self.handlers.ls);
         shell.setCommandHandler("pwd", self.handlers.pwd);
         shell.setCommandHandler("cd", self.handlers.cd);
@@ -62,8 +61,42 @@ var Josh = Josh || {};
       current: null
     };
 
-    function pathCompletionHandler() {
+    function pathCompletionHandler(cmd, arg, line, callback) {
+      console.log("completing " + arg);
+      var partial = "";
+      self.getNode(arg, function(node) {
+        if(!node) {
+          console.log("no node");
+          var lastPathSeparator = arg.lastIndexOf("/");
+          if(lastPathSeparator == arg.length - 1) {
+            return callback();
+          }
+          var parent = arg.substr(0, lastPathSeparator + 1);
+          console.log("parent: " + parent);
+          partial = arg.substr(lastPathSeparator + 1);
+          return self.getNode(parent, function(node) {
+            if(!node) {
+              return callback();
+            }
+            return completeChildren(node, partial, callback);
+          });
+        }
+        if(!arg || arg[arg.length-1] == '/') {
+          return completeChildren(node, partial, callback);
+        }
+        return callback({
+          completion: '/',
+          suggestions: []
+        });
+      });
+    }
 
+    function completeChildren(node, partial, callback) {
+      self.getChildNodes(node, function(childNodes) {
+        callback(shell.bestMatch(partial, _.map(childNodes, function(x) {
+          return x.name;
+        })));
+      });
     }
 
     function exec(cmd, args, callback) {
@@ -99,84 +132,9 @@ var Josh = Josh || {};
         return callback(template.not_found({cmd: 'ls', path: node.path}));
       }
       return self.getChildNodes(node, function(children) {
-        console.log("finish render: "+node.name);
+        console.log("finish render: " + node.name);
         self.withPrompt(self.templates.ls({nodes: children}), callback);
       });
-    }
-
-    function completionHandler(line, callback) {
-      var partial = line.text.substr(0, line.cursor);
-      var parts = split(partial);
-      console.log(parts);
-      if(parts.length == 0) {
-        return callback({suggestions: _commandList});
-      }
-      if(parts.length == 1) {
-        var cmd = parts[0];
-        if(startsWith(cmd, ".") || startsWith(cmd, "/")) {
-          return completePath(cmd, callback);
-        }
-        return callback(bestMatch(cmd, _commandList));
-      }
-      return completePath(parts[1], callback);
-    }
-
-    function completePath(path, callback) {
-      var uri = "/@api/deki/console/matches?path=" + encodeURIComponent(path);
-      if(_current) {
-        uri = uri + "&current=" + _current.Id;
-      }
-      $.getJSON(uri, function(data) {
-        console.log(data);
-        callback(bestMatch(path, data.Matches));
-      });
-    }
-
-    function split(str) {
-      var parts = str.split(/\s+/);
-      if(parts.length > 0 && !parts[parts.length - 1]) {
-        parts.pop();
-      }
-      return parts;
-    }
-
-    function startsWith(str1, str2) {
-      return str1.slice(0, str2.length) == str2;
-    }
-
-    function bestMatch(partial, possible) {
-      var completions = [];
-      var common = '';
-      for(var i = 0; i < possible.length; i++) {
-        var option = possible[i];
-        if(option.slice(0, partial.length) == partial) {
-          completions.push(option);
-          if(!common) {
-            common = option;
-            console.log("initial common:" + common);
-          } else if(option.slice(0, common.length) != common) {
-            console.log("find common stem for '" + common + "' and '" + option + "'");
-            var j = partial.length;
-            while(j < common.length && j < option.length) {
-              if(common[j] != option[j]) {
-                common = common.substr(0, j);
-                break;
-              }
-              j++;
-            }
-          }
-        }
-      }
-      if(completions.length == 0) {
-        return;
-      }
-      if(completions.length == 1) {
-        completions = null;
-      }
-      return {
-        result: common.substr(partial.length),
-        suggestions: completions
-      };
     }
 
     return self;

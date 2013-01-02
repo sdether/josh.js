@@ -297,15 +297,19 @@
       if(!line) {
         return callback();
       }
-      var cmd = _.first(split(line.text));
-      console.log("getting completion handler for "+cmd);
+      var text = line.text.substr(0, line.cursor);
+      var cmd = _.first(split(text)) || '';
+      console.log("getting completion handler for " + cmd);
       var handler = getHandler(cmd);
       if(!handler.completion) {
         return callback();
       }
-      console.log("calling completion handler for "+cmd);
-      var partial = line.text.substr(0, line.cursor);
-      var arg = _.last(split(partial));
+      console.log("calling completion handler for " + cmd);
+      var partial = text.substr(cmd.length);
+      if(cmd && !partial) {
+        return callback(' ');
+      }
+      var arg = _.last(split(partial)) || '';
       return handler.completion(cmd, arg, line, function(match) {
         console.log("completion: " + JSON.stringify(match));
         if(!match) {

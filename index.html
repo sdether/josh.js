@@ -125,12 +125,14 @@
         var shell = Shell({history: history});
         var pathhandler = Josh.PathHandler();
         pathhandler.current = root;
-        //pathhandler.attach(shell);
+        pathhandler.attach(shell);
         pathhandler.getNode = function(path, callback) {
+            console.log("get node at '"+path+"'");
             if(!path) {
-                return callback();
+                return callback(pathhandler.current);
             }
-            var parts = path.split('/');
+            var parts = _.filter(path.split('/'), function(x) { return x; });
+            console.log(JSON.stringify(parts));
             return findNode(pathhandler.current, parts, callback);
         };
         pathhandler.getChildNodes = function(node, callback) {
