@@ -130,7 +130,7 @@
                 return callback(pathhandler.current);
             }
             var parts = _.filter(path.split('/'), function(x) { return x; });
-            var start = ((path || '')[0] == '/') ? root :
+            var start = ((path || '')[0] == '/') ? root : pathhandler.current;
             console.log('start: '+start.path+', parts: '+JSON.stringify(parts));
             return findNode(start, parts, callback);
         };

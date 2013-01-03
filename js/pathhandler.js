@@ -3,10 +3,11 @@ var Josh = Josh || {};
   Josh.PathHandler = function() {
     var self = {
       attach: function(shell) {
+        self.handlers._original_exec = shell.getCommandHandler('_exec');
         shell.setCommandHandler("ls", self.handlers.ls);
         shell.setCommandHandler("pwd", self.handlers.pwd);
         shell.setCommandHandler("cd", self.handlers.cd);
-        shell.setCommandHandler("_default", self.handlers.exec);
+        shell.setCommandHandler("_exec", self.handlers.exec);
         shell.setPrompt(self.getPrompt());
       },
       handlers: {
@@ -16,7 +17,7 @@ var Josh = Josh || {};
         },
         exec: {
           exec: exec,
-          completion: pathCompletionHandler
+          completion: commandAndPathCompletionHandler
         },
         cd: {
           exec: cd,
@@ -60,6 +61,13 @@ var Josh = Josh || {};
       },
       current: null
     };
+
+    function commandAndPathCompletionHandler(cmd, arg, line, callback) {
+      if(arg[0] == '.' || arg[0] == '/') {
+        return pathCompletionHandler(cmd, arg, line, callback);
+      }
+      return self.handlers._original_exec.completion(cmd, arg, line, callback);
+    }
 
     function pathCompletionHandler(cmd, arg, line, callback) {
       console.log("completing " + arg);
