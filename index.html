@@ -98,9 +98,7 @@
             if(!parts || parts.length == 0) {
                 return callback(current);
             }
-            if(!parts[0]) {
-                current = root;
-            } else if(parts[0] == ".") {
+            if(parts[0] == ".") {
                 // carry on
             } else if(parts[0] == "..") {
                 current = current.parent;
@@ -132,8 +130,9 @@
                 return callback(pathhandler.current);
             }
             var parts = _.filter(path.split('/'), function(x) { return x; });
-            console.log(JSON.stringify(parts));
-            return findNode(pathhandler.current, parts, callback);
+            var start = ((path || '')[0] == '/') ? root :
+            console.log('start: '+start.path+', parts: '+JSON.stringify(parts));
+            return findNode(start, parts, callback);
         };
         pathhandler.getChildNodes = function(node, callback) {
             console.log("children for "+node.name);
