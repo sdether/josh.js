@@ -28,6 +28,7 @@ var Josh = Josh || {};
           completion: pathCompletionHandler
         }
       },
+      pathCompletionHandler: pathCompletionHandler,
       templates: {
         not_found: _.template("<div><%=cmd%>: <%=path%>: No such file or directory</div>"),
         ls: _.template("<div><% _.each(nodes, function(node) { %><span><%=node.name%>&nbsp;</span><% }); %></div>"),
@@ -128,16 +129,16 @@ var Josh = Josh || {};
     function ls(cmd, args, callback) {
       console.log('ls');
       if(!args || !args[0]) {
-        return render_ls(self.current, callback);
+        return render_ls(self.current, self.current.path, callback);
       }
       return self.getNode(args[0], function(node) {
-        render_ls(node, callback);
+        render_ls(node, args[0], callback);
       });
     }
 
-    function render_ls(node, callback) {
+    function render_ls(node, path, callback) {
       if(!node) {
-        return callback(template.not_found({cmd: 'ls', path: node.path}));
+        return callback(self.templates.not_found({cmd: 'ls', path: path}));
       }
       return self.getChildNodes(node, function(children) {
         console.log("finish render: " + node.name);

@@ -1,5 +1,6 @@
-(function ($, _, document, window) {
-  Shell = function (config) {
+var Josh = Josh || {};
+(function(root, $, _) {
+  Josh.Shell = function (config) {
     config = config || {};
 
     // instance fields
@@ -12,8 +13,8 @@
     var _suggest_html = config.suggest_html || '<div id="shell-suggest"></div>';
     var _suggest_id = config.suggest_id = "#shell-suggest";
     var _blinktime = config.blinktime || 500;
-    var _history = config.history || new ReadLine.History();
-    var _readline = config.readline || new ReadLine({history:_history});
+    var _history = config.history || new Josh.History();
+    var _readline = config.readline || new Josh.ReadLine({history:_history});
     var _active = false;
     var _cursor_visible = false;
     var _suggestion;
@@ -33,9 +34,6 @@
             content.append(itemTemplate({command:command}))
           });
           callback(content);
-        },
-        completion:function (cmd, arg, line, callback) {
-          callback(self.bestMatch(arg, self.commands()))
         }
       },
       history:{
@@ -211,7 +209,7 @@
       if (!_active) {
         return;
       }
-      window.setTimeout(function () {
+      root.setTimeout(function () {
         if (!_active) {
           return;
         }
@@ -346,5 +344,4 @@
     _readline.onCancel(self.deactivate);
     return self;
   }
-  ;
-})(jQuery, _, document, window);
+})(this, $, _);
