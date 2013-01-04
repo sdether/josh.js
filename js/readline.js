@@ -1,5 +1,6 @@
-(function() {
-  var SPECIAL = {
+var Josh = Josh || {};
+(function (root) {
+var SPECIAL = {
     8: 'BACKSPACE',
     9: 'TAB',
     13: 'ENTER',
@@ -19,21 +20,30 @@
     46: 'DELETE'
   };
 
-  ReadLine = function(config) {
+  Josh.ReadLine = function(config) {
     config = config || {};
 
     // instance fields
-    var _window = config.window || window;
-    var _document = config.document || document;
-    var _history = config.history || new ReadLine.History();
+    var _history = config.history || new Josh.History();
+    var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true }; // ~
+    var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
     var _active = false;
+    var _onActivate;
+    var _onDeactivate;
     var _onCompletion;
     var _onEnter;
     var _onKeydown;
     var _onChange;
+    var _onCancel;
+    var _onEOT;
+    var _onSearchStart;
+    var _onSearchEnd;
+    var _onSearchChange;
+    var _inSearch = false;
+    var _searchMatch;
+    var _lastSearchText = '';
     var _text = '';
     var _cursor = 0;
-    var _strUtil = ReadLine.StrUtil;
     var _kill_buffer = '';
     var _lastCmd;
     var _completionActive;
@@ -44,9 +54,21 @@
     var self = {
       activate: function() {
         _active = true;
+        if(_onActivate) {
+          _onActivate();
+        }
       },
       deactivate: function() {
         _active = false;
+        if(_onDeactivate) {
+          _onDeactivate();
+        }
+      },
+      onActivate: function(completionHandler) {
+        _onActivate = completionHandler;
+      },
+      onDeactivate: function(completionHandler) {
+        _onDeactivate = completionHandler;
       },
       onKeydown: function(keydownHandler) {
         _onKeydown = keydownHandler;
@@ -59,6 +81,21 @@
       },
       onCompletion: function(completionHandler) {
         _onCompletion = completionHandler;
+      },
+      onCancel: function(completionHandler) {
+        _onCancel = completionHandler;
+      },
+      onEOT: function(completionHandler) {
+        _onEOT = completionHandler;
+      },
+      onSearchStart: function(completionHandler) {
+        _onSearchStart = completionHandler;
+      },
+      onSearchEnd: function(completionHandler) {
+        _onSearchEnd = completionHandler;
+      },
+      onSearchChange: function(completionHandler) {
+        _onSearchChange = completionHandler;
       },
       getLine: function() {
         return {
@@ -85,25 +122,46 @@
     }
 
     function queue(cmd) {
-      _cmdQueue.push(cmd);
       if(_suspended) {
+        _cmdQueue.push(cmd);
         return;
       }
-      call(_cmdQueue.shift());
+      call(cmd);
     }
 
     function call(cmd) {
       console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
+      if(_inSearch && cmd.name != "cmdKeyPress" && cmd.name != "cmdReverseSearch") {
+        _inSearch = false;
+        if(cmd.name == 'cmdCancelSearch') {
+          _searchMatch = null;
+        }
+        if(_searchMatch) {
+          if(_searchMatch.text) {
+            _cursor = _searchMatch.cursoridx;
+            _text = _searchMatch.text;
+            _history.applySearch();
+          }
+          _searchMatch = null;
+        }
+        if(_onSearchEnd) {
+          _onSearchEnd();
+        }
+      }
       _lastCmd = cmd.name;
       cmd();
     }
 
-    function cmdBackpace() {
+    function cmdCancelSearch() {
+      // do nothing.. action for this was already taken in call()
+    }
+
+    function cmdBackspace() {
       if(_cursor == 0) {
         return;
       }
       --_cursor;
-      _text = _strUtil.remove(_text, _cursor, _cursor + 1);
+      _text = remove(_text, _cursor, _cursor + 1);
       refresh();
     }
 
@@ -114,13 +172,13 @@
       suspend(function(resumeCallback) {
         _onCompletion(self.getLine(), function(completion) {
           if(completion) {
-            _text = _strUtil.insert(_text, _cursor, completion);
+            _text = insert(_text, _cursor, completion);
             updateCursor(_cursor + completion.length);
           }
           _completionActive = true;
           resumeCallback();
         });
-     });
+      });
     }
 
     function cmdDone() {
@@ -135,8 +193,18 @@
         return;
       }
       suspend(function(resumeCallback) {
-        _onEnter(text, self.getLine(), resumeCallback);
+        _onEnter(text, function(text) {
+          if(text) {
+            _text = text;
+            _cursor = _text.length;
+          }
+          if(_onChange) {
+            _onChange(self.getLine());
+          }
+          resumeCallback();
+        });
       });
+
     }
 
     function suspend(asyncCall) {
@@ -176,6 +244,48 @@
       updateCursor(_cursor + 1);
     }
 
+    function cmdBackwardWord() {
+      if(_cursor == 0) {
+        return;
+      }
+      var previousWhitespace = 0;
+      var findNonWhiteSpace = _text[_cursor] == ' ' || _text[_cursor - 1] == ' ';
+      for(var i = _cursor - 1; i > 0; i--) {
+        if(findNonWhiteSpace) {
+          if(_text[i] != ' ') {
+            findNonWhiteSpace = false;
+          }
+        } else {
+          if(_text[i] == ' ') {
+            previousWhitespace = i + 1;
+            break;
+          }
+        }
+      }
+      updateCursor(previousWhitespace);
+    }
+
+    function cmdForwardWord() {
+      if(_cursor == _text.length) {
+        return;
+      }
+      var nextWhitespace = _text.length;
+      var findNonWhitespace = _text[_cursor] == ' ';
+      for(var i = _cursor + 1; i < _text.length; i++) {
+        if(findNonWhitespace) {
+          if(_text[i] != ' ') {
+            findNonWhitespace = false;
+          }
+        } else {
+          if(_text[i] == ' ') {
+            nextWhitespace = i;
+            break;
+          }
+        }
+      }
+      updateCursor(nextWhitespace);
+    }
+
     function cmdHistoryPrev() {
       if(!_history.hasPrev()) {
         return;
@@ -190,12 +300,32 @@
       getHistory(_history.next);
     }
 
+    function cmdHistoryTop() {
+      getHistory(_history.top);
+    }
+
+    function cmdHistoryEnd() {
+      getHistory(_history.end);
+    }
+
     function cmdDeleteChar() {
+      if(_text.length == 0) {
+        if(_onEOT) {
+          _onEOT();
+          return;
+        }
+      }
       if(_cursor == _text.length) {
         return;
       }
-      _text = _strUtil.remove(_text, _cursor, _cursor + 1);
+      _text = remove(_text, _cursor, _cursor + 1);
       refresh();
+    }
+
+    function cmdCancel() {
+      if(_onCancel) {
+        _onCancel();
+      }
     }
 
     function cmdKillToEOF() {
@@ -205,7 +335,7 @@
     }
 
     function cmdYank() {
-      _text = _strUtil.insert(_text, _cursor, _kill_buffer);
+      _text = insert(_text, _cursor, _kill_buffer);
       updateCursor(_cursor + _kill_buffer.length);
     }
 
@@ -214,15 +344,20 @@
     }
 
     function cmdReverseSearch() {
-
-    }
-
-    function cmdBackwardWord() {
-
-    }
-
-    function cmdForwardWord() {
-
+      if(!_inSearch) {
+        _inSearch = true;
+        if(_onSearchStart) {
+          _onSearchStart();
+        }
+        if(_onSearchChange) {
+          _onSearchChange({});
+        }
+      } else {
+        if(!_searchMatch) {
+          _searchMatch = {term: ''};
+        }
+        search();
+      }
     }
 
     function updateCursor(position) {
@@ -231,18 +366,38 @@
     }
 
     function addText(c) {
-      _text = _strUtil.insert(_text, _cursor, c);
+      _text = insert(_text, _cursor, c);
       ++_cursor;
       refresh();
     }
 
-    function refresh() {
-      if(_completionActive) {
-        _completionActive = false;
-        if(_onCompletion) {
-          _onCompletion();
+    function addSearchText(c) {
+      if(!_searchMatch) {
+        _searchMatch = {term: ''};
+      }
+      _searchMatch.term += c;
+      search();
+    }
+
+    function search() {
+      console.log("searchtext: " + _searchMatch.term);
+      var match = _history.search(_searchMatch.term);
+      if(match != null) {
+        _searchMatch = match;
+        console.log("match: " + match);
+        if(_onSearchChange) {
+          _onSearchChange(match);
         }
       }
+    }
+
+    function refresh() {
+//      if(_completionActive) {
+//        _completionActive = false;
+//        if(_onCompletion) {
+//          _onCompletion();
+//        }
+//      }
       if(_onChange) {
         _onChange(self.getLine());
       }
@@ -254,23 +409,80 @@
       updateCursor(_text.length);
     }
 
+    function checkKeyMatch(a, b) {
+      return a.keyCode == b.keyCode
+        && Boolean(a.shiftKey) == Boolean(b.shiftKey)
+        && Boolean(a.ctrlKey) == Boolean(b.ctrlKey)
+        && Boolean(a.altKey) == Boolean(b.altKey);
+    }
+
+    function remove(text, from, to) {
+      if(text.length <= 1 || text.length <= to - from) {
+        return '';
+      }
+      if(from == 0) {
+
+        // delete leading characters
+        return text.substr(to);
+      }
+      var left = text.substr(0, from);
+      var right = text.substr(to);
+      return left + right;
+    }
+
+    function insert(text, idx, ins) {
+      if(idx == 0) {
+        return ins + text;
+      }
+      if(idx >= text.length) {
+        return text + ins;
+      }
+      var left = text.substr(0, idx);
+      var right = text.substr(idx);
+      return left + ins + right;
+    }
+
+
     // set up key capture
-    document.onkeydown = function(e) {
-      e = e || window.event
-      if(!_active) {
+    root.onkeydown = function(e) {
+      e = e || window.event;
+
+      // check if the keypress is an the activation key
+      if(!_active && checkKeyMatch(e, _activationKey)) {
+        self.activate();
+        return false;
+      }
+
+      // return as unhandled if we're not active or the key is just a modifier key
+      if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18) {
         return true;
       }
-      //console.log("keydown - code: " + e.keyCode);
+
       var handled = true;
+
+      // check keys special keys, regardless of modifiers
       switch(e.keyCode) {
         case 8:  // Backspace
-          queue(cmdBackpace);
+          queue(cmdBackspace);
           break;
         case 9:  // Tab
           queue(cmdComplete);
           break;
         case 13: // Enter
           queue(cmdDone);
+          break;
+        case 27: // Esc
+          if(_inSearch) {
+            queue(cmdCancelSearch);
+          } else {
+            handled = false;
+          }
+          break;
+        case 33: // Page Up
+          queue(cmdHistoryTop);
+          break;
+        case 34: // Page Down
+          queue(cmdHistoryEnd);
           break;
         case 35: // End
           queue(cmdEnd);
@@ -297,9 +509,6 @@
         // these we catch and have no commands for
         case 10: // Pause
         case 19: // Caps Lock
-        case 27: // Esc
-        case 33: // Page Up
-        case 34: // Page Down
         case 45: // Insert
           break;
 
@@ -317,12 +526,20 @@
               queue(cmdHome);
               handled = true;
               break;
-            case 69: // E
-              queue(cmdEnd);
-              handled = true;
-              break;
             case 66: // B
               queue(cmdLeft);
+              handled = true;
+              break;
+            case 67: // C
+              queue(cmdCancel);
+              handled = true;
+              break;
+            case 68: // D
+              queue(cmdDeleteChar);
+              handled = true;
+              break;
+            case 69: // E
+              queue(cmdEnd);
               handled = true;
               break;
             case 70: // F
@@ -343,10 +560,6 @@
               break;
             case 89: // Y
               queue(cmdYank);
-              handled = true;
-              break;
-            case 68: // D
-              queue(cmdDeleteChar);
               handled = true;
               break;
             case 76: // L
@@ -372,6 +585,10 @@
         }
       }
       if(!handled) {
+        if(checkKeyMatch(e, _deactivationKey)) {
+          self.deactivate();
+          return false;
+        }
         return true;
       }
       var info = getKeyInfo(e);
@@ -388,14 +605,18 @@
       e.preventDefault();
       return false;
     };
-    document.onkeypress = function(e) {
+    root.onkeypress = function(e) {
       if(!_active) {
         return true;
       }
-      //console.log("keypress - code: " + e.keyCode + ", char: " + String.fromCharCode(e.keyCode) + ", ctrl: " + e.ctrlKey);
+
       var key = getKeyInfo(e);
       queue(function cmdKeyPress() {
-        addText(key.char);
+        if(_inSearch) {
+          addSearchText(key.char);
+        } else {
+          addText(key.char);
+        }
         if(_onKeydown) {
           _onKeydown(key);
         }
@@ -406,68 +627,6 @@
 
     return self;
   };
-
-  ReadLine.StrUtil = {
-    remove: function(text, from, to) {
-      if(text.length <= 1 || text.length <= to - from) {
-        return '';
-      }
-      if(from == 0) {
-
-        // delete leading characters
-        return text.substr(to);
-      }
-      var left = text.substr(0, from);
-      var right = text.substr(to);
-      return left + right;
-    },
-    insert: function(text, idx, ins) {
-      if(idx == 0) {
-        return ins + text;
-      }
-      if(idx >= text.length) {
-        return text + ins;
-      }
-      var left = text.substr(0, idx);
-      var right = text.substr(idx);
-      return left + ins + right;
-    }
-  };
-
-  ReadLine.History = function() {
-
-    var _history = [''];
-    var _cursor = 0;
-
-    return {
-      update: function(text) {
-        _history[_cursor] = text;
-      },
-      accept: function(text) {
-        if(_cursor == _history.length - 1) {
-          _history[_cursor] = text;
-        } else {
-          _history.push(text);
-        }
-        _history.push('');
-        _cursor = _history.length - 1;
-      },
-      hasNext: function() {
-        return _cursor < (_history.length - 1);
-      },
-      hasPrev: function() {
-        return _cursor > 0;
-      },
-      prev: function() {
-        --_cursor;
-        return _history[_cursor];
-      },
-      next: function() {
-        ++_cursor;
-        return _history[_cursor];
-      }
-    };
-  };
-})();
+})(this);
 
 
