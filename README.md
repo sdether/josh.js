@@ -15,6 +15,7 @@ josh.js is licensed under the Apache 2.0 License
 
 * code is ready for experimental use
   * Only confirmed to work on chrome so far.
+  * API is not yet stable
 * needs minified versions of complete toolkit and just readline.js
 * needs code documentation and documenation site
 

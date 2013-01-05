@@ -15,17 +15,11 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
-(function(root, $) {
-  Josh.PathHandler = function() {
+(function(root, $, _) {
+  Josh.PathHandler = function(shell) {
+    var _console = Josh.Debug && root.console ? root.console : {log: function() {}};
+    var _shell = shell;
     var self = {
-      attach: function(shell) {
-        self.handlers._original_exec = shell.getCommandHandler('_exec');
-        shell.setCommandHandler("ls", self.handlers.ls);
-        shell.setCommandHandler("pwd", self.handlers.pwd);
-        shell.setCommandHandler("cd", self.handlers.cd);
-        shell.setCommandHandler("_exec", self.handlers.exec);
-        shell.setPrompt(self.getPrompt());
-      },
       handlers: {
         ls: {
           exec: ls,
@@ -60,24 +54,17 @@ var Josh = Josh || {};
       getPrompt: function() {
         return self.templates.prompt({node: self.current});
       },
-      withPrompt: function(output, prompt, cmdtext) {
-        var callback = _.last(arguments);
-        if(output == callback) {
-          output = null;
-        }
-        if(prompt == callback) {
-          prompt = null;
-        }
-        if(cmdtext == callback) {
-          cmdtext = null;
-        }
-        if(!prompt) {
-          prompt = self.getPrompt();
-        }
-        callback(output, prompt, cmdtext);
-      },
       current: null
     };
+
+    self.handlers._original_exec = _shell.getCommandHandler('_exec');
+    _shell.setCommandHandler("ls", self.handlers.ls);
+    _shell.setCommandHandler("pwd", self.handlers.pwd);
+    _shell.setCommandHandler("cd", self.handlers.cd);
+    _shell.setCommandHandler("_exec", self.handlers.exec);
+    _shell.onNewPrompt(function(callback) {
+      callback(self.getPrompt());
+    });
 
     function commandAndPathCompletionHandler(cmd, arg, line, callback) {
       if(arg[0] == '.' || arg[0] == '/') {
@@ -87,17 +74,17 @@ var Josh = Josh || {};
     }
 
     function pathCompletionHandler(cmd, arg, line, callback) {
-      console.log("completing " + arg);
+      _console.log("completing " + arg);
       var partial = "";
       self.getNode(arg, function(node) {
         if(!node) {
-          console.log("no node");
+          _console.log("no node");
           var lastPathSeparator = arg.lastIndexOf("/");
           if(lastPathSeparator == arg.length - 1) {
             return callback();
           }
           var parent = arg.substr(0, lastPathSeparator + 1);
-          console.log("parent: " + parent);
+          _console.log("parent: " + parent);
           partial = arg.substr(lastPathSeparator + 1);
           return self.getNode(parent, function(node) {
             if(!node) {
@@ -118,14 +105,14 @@ var Josh = Josh || {};
 
     function completeChildren(node, partial, callback) {
       self.getChildNodes(node, function(childNodes) {
-        callback(shell.bestMatch(partial, _.map(childNodes, function(x) {
+        callback(_shell.bestMatch(partial, _.map(childNodes, function(x) {
           return x.name;
         })));
       });
     }
 
     function exec(cmd, args, callback) {
-      self.withPrompt(callback);
+      callback();
     }
 
     function cd(cmd, args, callback) {
@@ -134,16 +121,16 @@ var Josh = Josh || {};
           return callback(self.templates.not_found({cmd: 'cd', path: args[0]}));
         }
         self.current = node;
-        return self.withPrompt(callback);
+        return callback();
       });
     }
 
     function pwd(cmd, args, callback) {
-      self.withPrompt(self.templates.pwd({node: self.current}), callback);
+      callback(self.templates.pwd({node: self.current}));
     }
 
     function ls(cmd, args, callback) {
-      console.log('ls');
+      _console.log('ls');
       if(!args || !args[0]) {
         return render_ls(self.current, self.current.path, callback);
       }
@@ -157,8 +144,8 @@ var Josh = Josh || {};
         return callback(self.templates.not_found({cmd: 'ls', path: path}));
       }
       return self.getChildNodes(node, function(children) {
-        console.log("finish render: " + node.name);
-        self.withPrompt(self.templates.ls({nodes: children}), callback);
+        _console.log("finish render: " + node.name);
+        callback(self.templates.ls({nodes: children}));
       });
     }
 

@@ -40,6 +40,7 @@ var SPECIAL = {
     config = config || {};
 
     // instance fields
+    var _console = Josh.Debug && root.console ? root.console : {log: function() {}};
     var _history = config.history || new Josh.History();
     var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true }; // ~
     var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
@@ -124,12 +125,14 @@ var SPECIAL = {
     // private methods
     function getKeyInfo(e) {
       var info = {
-        code: e.keyCode,
+        code: e.keyCode|| e.charCode,
         shift: e.shiftKey,
         control: e.controlKey,
         alt: e.altKey,
         isChar: true
       };
+
+      _console.log("keycode: "+ e.keyCode+", charcode: "+ e.charCode);
       var code = info.code;
       var c = String.fromCharCode(code);
       info.name = SPECIAL[code] || c;
@@ -146,7 +149,7 @@ var SPECIAL = {
     }
 
     function call(cmd) {
-      console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
+      _console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
       if(_inSearch && cmd.name != "cmdKeyPress" && cmd.name != "cmdReverseSearch") {
         _inSearch = false;
         if(cmd.name == 'cmdCancelSearch') {
@@ -396,11 +399,11 @@ var SPECIAL = {
     }
 
     function search() {
-      console.log("searchtext: " + _searchMatch.term);
+      _console.log("searchtext: " + _searchMatch.term);
       var match = _history.search(_searchMatch.term);
       if(match != null) {
         _searchMatch = match;
-        console.log("match: " + match);
+        _console.log("match: " + match);
         if(_onSearchChange) {
           _onSearchChange(match);
         }

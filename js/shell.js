@@ -18,8 +18,9 @@ var Josh = Josh || {};
 (function(root, $, _) {
   Josh.Shell = function (config) {
     config = config || {};
-
+    
     // instance fields
+    var _console = Josh.Debug && root.console ? root.console : {log: function() {}};
     var _prompt = config.prompt || 'jsh$';
     var _shell_view_id = config.shell_view_id || '#shell-view';
     var _shell_panel_id = config.shell_panel_id || '#shell-panel';
@@ -88,6 +89,7 @@ var Josh = Josh || {};
     };
     var _searchMatch = '';
     var _view, _panel;
+    var _promptHandler;
 
     // public methods
     var self = {
@@ -102,13 +104,19 @@ var Josh = Josh || {};
         }
         _view = $(_shell_view_id);
         _panel = $(_shell_panel_id);
+
         self.refresh();
         _active = true;
         _readline.activate();
         blinkCursor();
+        if(_promptHandler) {
+          _promptHandler(function(prompt) {
+            self.setPrompt(prompt);
+          })
+        }
       },
       deactivate:function () {
-        console.log("deactivating");
+        _console.log("deactivating");
         _active = false;
         _readline.deactivate();
 //        if(_onDeactivate) {
@@ -134,6 +142,9 @@ var Josh = Josh || {};
       onDeactivate:function (completionHandler) {
         _readline.onDeactivate(completionHandler);
       },
+      onNewPrompt: function(completionHandler) {
+        _promptHandler = completionHandler;
+      },
       render:function () {
         var text = _line.text || '';
         var cursorIdx = _line.cursor || 0;
@@ -155,12 +166,12 @@ var Josh = Josh || {};
         $(_input_id + ' .input .right').html(right);
         _cursor_visible = true;
         self.scrollToBottom();
-        console.log('rendered "' + text + '" w/ cursor at ' + cursorIdx);
+        _console.log('rendered "' + text + '" w/ cursor at ' + cursorIdx);
       },
       refresh:function () {
         $(_input_id).replaceWith(_input_html);
         self.render();
-        console.log('refreshed ' + _input_id);
+        _console.log('refreshed ' + _input_id);
 
       },
       scrollToBottom:function () {
@@ -196,9 +207,9 @@ var Josh = Josh || {};
             result.suggestions.push(option);
             if (!common) {
               common = option;
-              console.log("initial common:" + common);
+              _console.log("initial common:" + common);
             } else if (option.slice(0, common.length) != common) {
-              console.log("find common stem for '" + common + "' and '" + option + "'");
+              _console.log("find common stem for '" + common + "' and '" + option + "'");
               var j = partial.length;
               while (j < common.length && j < option.length) {
                 if (common[j] != option[j]) {
@@ -270,35 +281,38 @@ var Josh = Josh || {};
     });
     _readline.onSearchStart(function () {
       $(_input_id).replaceWith(_search_html);
-      console.log('started search');
+      _console.log('started search');
     });
     _readline.onSearchEnd(function () {
       $(_input_id).replaceWith(_input_html);
       _searchMatch = null;
       self.render();
-      console.log("ended search");
+      _console.log("ended search");
     });
     _readline.onSearchChange(function (match) {
       _searchMatch = match;
       self.render();
     });
     _readline.onEnter(function (cmdtext, callback) {
-      console.log("got command: " + cmdtext);
+      _console.log("got command: " + cmdtext);
       var parts = split(cmdtext);
       var cmd = parts[0];
       var args = parts.slice(1);
       var handler = getHandler(cmd);
-      return handler.exec(cmd, args, function (output, prompt, cmdtext) {
+      return handler.exec(cmd, args, function (output, cmdtext) {
         if (output) {
           $(_input_id).after(output);
         }
         $(_input_id + ' .input .cursor').css('textDecoration', '');
         $(_input_id).removeAttr('id');
         $(_shell_view_id).append(_input_html);
-        if (prompt) {
-          self.setPrompt(prompt);
+        if(_promptHandler) {
+          _promptHandler(function(prompt) {
+            self.setPrompt(prompt);
+            return callback(cmdtext);
+          });
         }
-        callback(cmdtext);
+        return callback(cmdtext);
       });
     });
     _readline.onCompletion(function (line, callback) {
@@ -314,7 +328,7 @@ var Josh = Josh || {};
 
       var cmd = parts.shift() || '';
       var arg = parts.pop() || '';
-      console.log("getting completion handler for " + cmd);
+      _console.log("getting completion handler for " + cmd);
       var handler = _cmdHandlers[cmd];
       if (!handler) {
         if (arg) {
@@ -338,16 +352,16 @@ var Josh = Josh || {};
         // handler has no completion function, so we can't complete
         return callback();
       }
-      console.log("calling completion handler for " + cmd);
+      _console.log("calling completion handler for " + cmd);
       return handler.completion(cmd, arg, line, function (match) {
-        console.log("completion: " + JSON.stringify(match));
+        _console.log("completion: " + JSON.stringify(match));
         if (!match) {
           return callback();
         }
         if (match.suggestions) {
           _suggestion = $(_suggest_html);
           for (var i = 0; i < match.suggestions.length; i++) {
-            console.log("suggestion: " + match.suggestions[i]);
+            _console.log("suggestion: " + match.suggestions[i]);
             _suggestion.append($("<div></div>").text(match.suggestions[i]));
           }
           $(_input_id).after(_suggestion);
