@@ -19,6 +19,7 @@ var Josh = Josh || {};
   Josh.History = function (config) {
     config = config || {};
 
+    var _console = Josh.Debug && root.console ? root.console : {log: function() {}};
     var _history = config.history || [''];
     var _cursor = config.cursor || 0;
     var _searchCursor = _cursor;
@@ -49,22 +50,22 @@ var Josh = Josh || {};
 
     return {
       update:function (text) {
-        console.log("updating history to " + text);
+        _console.log("updating history to " + text);
         _history[_cursor] = text;
         save();
       },
       accept:function (text) {
-        console.log("accepting history " + text);
+        _console.log("accepting history " + text);
         var last = _history.length - 1;
         if (text) {
           if (_cursor == last) {
-            console.log("we're at the end already, update last position");
+            _console.log("we're at the end already, update last position");
             _history[_cursor] = text;
           } else if (!_history[last]) {
-            console.log("we're not at the end, but the end was blank, so update last position");
+            _console.log("we're not at the end, but the end was blank, so update last position");
             _history[last] = text;
           } else {
-            console.log("appending to end");
+            _console.log("appending to end");
             _history.push(text);
           }
           _history.push('');
@@ -132,7 +133,7 @@ var Josh = Josh || {};
       },
       applySearch:function () {
         if (_lastSearchTerm) {
-          console.log("setting history to position" + _searchCursor + "(" + _cursor + "): " + _history[_searchCursor]);
+          _console.log("setting history to position" + _searchCursor + "(" + _cursor + "): " + _history[_searchCursor]);
           _cursor = _searchCursor;
           return _history[_cursor];
         }
