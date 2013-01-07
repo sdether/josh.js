@@ -16,8 +16,11 @@
 
 var Josh = Josh || {};
 (function(root, $, _) {
-  Josh.PathHandler = function(shell) {
-    var _console = Josh.Debug && root.console ? root.console : {log: function() {}};
+  Josh.PathHandler = function(shell, config) {
+    var _console = config.console || (Josh.Debug && root.console ? root.console : {
+      log: function() {
+      }
+    });
     var _shell = shell;
     var self = {
       handlers: {
@@ -74,7 +77,7 @@ var Josh = Josh || {};
     }
 
     function pathCompletionHandler(cmd, arg, line, callback) {
-      _console.log("completing " + arg);
+      _console.log("completing '" + arg+ "'");
       var partial = "";
       self.getNode(arg, function(node) {
         if(!node) {
@@ -93,7 +96,7 @@ var Josh = Josh || {};
             return completeChildren(node, partial, callback);
           });
         }
-        if(!arg || arg[arg.length-1] == '/') {
+        if(!arg || arg[arg.length - 1] == '/') {
           return completeChildren(node, partial, callback);
         }
         return callback({

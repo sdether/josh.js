@@ -15,8 +15,8 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
-(function (root) {
-var SPECIAL = {
+(function(root) {
+  var SPECIAL = {
     8: 'BACKSPACE',
     9: 'TAB',
     13: 'ENTER',
@@ -40,7 +40,10 @@ var SPECIAL = {
     config = config || {};
 
     // instance fields
-    var _console = Josh.Debug && root.console ? root.console : {log: function() {}};
+    var _console = config.console || (Josh.Debug && root.console ? root.console : {
+      log: function() {
+      }
+    });
     var _history = config.history || new Josh.History();
     var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true }; // ~
     var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
@@ -125,14 +128,13 @@ var SPECIAL = {
     // private methods
     function getKeyInfo(e) {
       var info = {
-        code: e.keyCode|| e.charCode,
+        code: e.keyCode || e.charCode,
         shift: e.shiftKey,
         control: e.controlKey,
         alt: e.altKey,
         isChar: true
       };
 
-      _console.log("keycode: "+ e.keyCode+", charcode: "+ e.charCode);
       var code = info.code;
       var c = String.fromCharCode(code);
       info.name = SPECIAL[code] || c;
@@ -604,32 +606,36 @@ var SPECIAL = {
         }
       }
       if(!handled) {
-        if(checkKeyMatch(e, _deactivationKey)) {
-          self.deactivate();
-          return false;
+        if(!checkKeyMatch(e, _deactivationKey)) {
+          return true;
         }
-        return true;
-      }
-      var info = getKeyInfo(e);
-      if(_onKeydown) {
-        _onKeydown({
-          code: e.keyCode,
-          shift: e.shiftKey,
-          control: e.controlKey,
-          alt: e.altKey,
-          name: SPECIAL[e.keyCode],
-          isChar: false
-        });
+        self.deactivate();
+      } else {
+        var info = getKeyInfo(e);
+        if(_onKeydown) {
+          _onKeydown({
+            code: e.keyCode,
+            shift: e.shiftKey,
+            control: e.controlKey,
+            alt: e.altKey,
+            name: SPECIAL[e.keyCode],
+            isChar: false
+          });
+        }
       }
       e.preventDefault();
+      e.stopPropagation();
+      e.cancelBubble = true;
       return false;
     };
     root.onkeypress = function(e) {
       if(!_active) {
         return true;
       }
-
       var key = getKeyInfo(e);
+      if(key.code == 0 || e.defaultPrevented) {
+        return false;
+      }
       queue(function cmdKeyPress() {
         if(_inSearch) {
           addSearchText(key.char);
@@ -641,6 +647,8 @@ var SPECIAL = {
         }
       });
       e.preventDefault();
+      e.stopPropagation();
+      e.cancelBubble = true;
       return false;
     };
 

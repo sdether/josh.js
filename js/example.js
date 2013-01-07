@@ -15,7 +15,10 @@
  *-------------------------------------------------------------------------*/
 
 (function(root, $, _) {
-  Josh.Debug = true;
+  var _console = (Josh.Debug && root.console) ? root.console : {
+    log: function() {
+    }
+  };
   var fs = {
     bin: {},
     boot: {},
@@ -112,8 +115,8 @@
   );
   root.path = '/';
   var history = Josh.History();
-  var shell = Josh.Shell({history: history});
-  var pathhandler = Josh.PathHandler(shell);
+  var shell = Josh.Shell({history: history, console: _console});
+  var pathhandler = Josh.PathHandler(shell, {console: _console});
   pathhandler.current = root;
   pathhandler.getNode = function(path, callback) {
     if(!path) {
@@ -123,32 +126,31 @@
       return x;
     });
     var start = ((path || '')[0] == '/') ? root : pathhandler.current;
-    console.log('start: ' + start.path + ', parts: ' + JSON.stringify(parts));
+    _console.log('start: ' + start.path + ', parts: ' + JSON.stringify(parts));
     return findNode(start, parts, callback);
   };
   pathhandler.getChildNodes = function(node, callback) {
-    console.log("children for " + node.name);
+    _console.log("children for " + node.name);
     callback(node.childnodes);
   };
 
   $(document).ready(function() {
-    var console = $('#shell-panel');
+    var consolePanel = $('#shell-panel');
+    function showConsole() {
+      consolePanel.slideDown();
+      consolePanel.focus();
+    }
+
+    function hideConsole() {
+      consolePanel.slideUp();
+      consolePanel.blur();
+    }
     shell.onActivate(function() {
       showConsole();
     });
     shell.onDeactivate(function() {
       hideConsole();
     });
-    function showConsole() {
-      console.slideDown();
-      console.focus();
-    }
-
-    function hideConsole() {
-      console.slideUp();
-      console.blur();
-    }
-
     shell.activate();
   });
 })(this, $, _);
