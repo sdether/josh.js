@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Josh.js by sdether</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/sdether/josh.js">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/sdether/josh.js/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/sdether/josh.js/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Josh.js</h1>
+          <p>Toolkit for building bash-like shell in the browser, including full readline support</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/sdether">sdether</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>josh.js 0.2</h1>
+
+<p><strong><em>Javascript Online SHell</em></strong> provides a toolkit for building bash-like command line consoles for web pages. It consists of the following components:</p>
+
+<ul>
+<li>
+<code>readline.js</code> - full readline support for ctrl sequences, tab, history, etc.</li>
+<li>
+<code>shell.js</code> - visual presentation of the shell and command handling</li>
+<li>
+<code>pathhandler.js</code> - provide cd, ls, pwd and path completion toolikit</li>
+<li>
+<code>history.js</code> - localStorage backed command history</li>
+</ul><h2>License</h2>
+
+<p>josh.js is licensed under the Apache 2.0 License</p>
+
+<h2>Status</h2>
+
+<ul>
+<li>code is ready for experimental use
+
+<ul>
+<li>Tested under Chrome, Firefox, Safari and IE9</li>
+<li>API may not yet be stable</li>
+</ul>
+</li>
+<li>needs minified versions of complete toolkit and just readline.js</li>
+<li>needs code documentation and documenation site</li>
+<li>would like to add AMD support</li>
+</ul><h2>Usage</h2>
+
+<p>Until documentation is written, refer to <code>index.html</code> and <code>example.js</code> for a sample implementation of a shell with path completion.</p>
+
+<h2>Components</h2>
+
+<p><strong><em>josh</em></strong> is built from 4 components and can be used in part or in full.</p>
+
+<h3>readline.js</h3>
+
+<p><code>readline.js</code> has no dependencies on any outside libraries, although it requires either <code>history.js</code> or an object implementing the same calls.</p>
+
+<p>It implements key trapping to bring <a href="http://cnswww.cns.cwru.edu/php/chet/readline/readline.html">GNU Readline</a> like line editing to the browser. It can be used by itself to bring readline support to custom data entry fields or in conjunction with <code>shell.js</code> to create a full console.</p>
+
+<h3>shell.js</h3>
+
+<p><code>shell.js</code> has external dependencies of <a href="http://jquery.com/">jQuery</a>, <a href="http://underscorejs.org/">Underscore</a> and internal dependencies of <code>readline.js</code> and <code>history.js</code>.</p>
+
+<p>It provides a simple console UI, using a <em>panel</em> for the console viewport and an auto-scrolling <em>view</em> inside the panel. It uses Underscore templates for generating the view html, although any template generator can be substituted as long as it can be expressed in the form of a function that takes a JSON object of arguments and returns an html string.</p>
+
+<p>It also implements command handling so that new commands can be added by name with execution and completion handlers. Out of the box, <code>shell.js</code> provides the following commands:</p>
+
+<ul>
+<li>help - list all known commands (including user added)</li>
+<li>clear - clear the "screen" i.e. viewport</li>
+<li>history - show the command history captured by <code>readline.js</code> in <code>history.js</code>
+</li>
+</ul><h3>pathhandler.js</h3>
+
+<p><code>pathhandler.js</code> is a mix in to easily add the <code>cd</code>, <code>ls</code> and <code>pwd</code> commands as well as path completion. It has the same external dependencies of <a href="http://jquery.com/">jQuery</a>, <a href="http://underscorejs.org/">Underscore</a> as <code>shell.js</code> and also uses Underscore templating.</p>
+
+<p>By implementing the functions <code>getNode</code> and <code>getChildNodes</code>, this library adds path traversal, discovery and completion just like a bash shell.</p>
+
+<h3>history.js</h3>
+
+<p><code>history.js</code> implements a localStorage back command history storage that persists over page changes and reloads. It is used by the <code>shell.js</code> history command to list all executed commands, and by <code>readline.js</code> for up/down arrow and reverse search capabilities.</p>
+
+<h2>Changelog</h2>
+
+<p><strong>0.2</strong> -- 2013/01/07</p>
+
+<ul>
+<li>console wrapper to allow debug logging to be turned on and off</li>
+<li>refactored how pathhandler attaches to shell because it needs to keep a reference to the shell</li>
+<li>refactored how prompts are set. now uses dedicated callback rather than returning the prompt in the <code>onEnter</code> callback</li>
+<li>tested and made fixes to ensure compatibility with major modern browsers</li>
+</ul><p><strong>0.1</strong> -- 2013/01/04</p>
+
+<ul>
+<li>Initial code-complete release</li>
+</ul>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
