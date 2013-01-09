@@ -53,6 +53,9 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
+**0.2.1** -- 2013/01/08
+* fixed activation/deactivation propagation through the shell, which caused issues with first time activation via activation key instead of method call to fail.
+
 **0.2** -- 2013/01/07
 * console wrapper to allow debug logging to be turned on and off
 * refactored how pathhandler attaches to shell because it needs to keep a reference to the shell
