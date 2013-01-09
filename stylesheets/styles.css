@@ -849,3 +849,9 @@ section #title .credits.right {
     display: none;
   }
 }
+
+#demo {
+    border: 1px dashed #E6EBE0;
+    background: #454545;
+    padding: 2px;
+}
