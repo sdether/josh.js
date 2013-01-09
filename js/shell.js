@@ -39,6 +39,8 @@ var Josh = Josh || {};
     var _cursor_visible = false;
     var _suggestion;
     var _itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
+    var _activationHandler;
+    var _deactivationHandler;
     var _cmdHandlers = {
       clear: {
         exec: function(cmd, args, callback) {
@@ -102,29 +104,12 @@ var Josh = Josh || {};
           _active = false;
           return;
         }
-        if($(_input_id).length == 0) {
-          $(_shell_view_id).append(_input_html);
-        }
-        _view = $(_shell_view_id);
-        _panel = $(_shell_panel_id);
-
-        self.refresh();
-        _active = true;
         _readline.activate();
-        blinkCursor();
-        if(_promptHandler) {
-          _promptHandler(function(prompt) {
-            self.setPrompt(prompt);
-          })
-        }
       },
       deactivate: function() {
         _console.log("deactivating");
         _active = false;
         _readline.deactivate();
-//        if(_onDeactivate) {
-//          _onDeactivate();
-//        }
       },
       setCommandHandler: function(cmd, cmdHandler) {
         _cmdHandlers[cmd] = cmdHandler;
@@ -140,10 +125,10 @@ var Josh = Josh || {};
         self.refresh();
       },
       onActivate: function(completionHandler) {
-        _readline.onActivate(completionHandler);
+        _activationHandler = completionHandler;
       },
       onDeactivate: function(completionHandler) {
-        _readline.onDeactivate(completionHandler);
+        _deactivationHandler = completionHandler;
       },
       onNewPrompt: function(completionHandler) {
         _promptHandler = completionHandler;
@@ -178,7 +163,6 @@ var Josh = Josh || {};
 
       },
       scrollToBottom: function() {
-        //_panel.scrollTop(_shell.height());
         _panel.animate({scrollTop: _view.height()}, 0);
       },
       bestMatch: function(partial, possible) {
@@ -273,6 +257,34 @@ var Josh = Josh || {};
     }
 
     // init
+    _readline.onActivate(function() {
+      _console.log("activating shell");
+      if(!_view) {
+      _view = $(_shell_view_id);
+      }
+      if(!_panel) {
+        _panel = $(_shell_panel_id);
+      }
+      if($(_input_id).length == 0) {
+        _view.append(_input_html);
+      }
+      self.refresh();
+      _active = true;
+      blinkCursor();
+      if(_promptHandler) {
+        _promptHandler(function(prompt) {
+          self.setPrompt(prompt);
+        })
+      }
+      if(_activationHandler) {
+        _activationHandler();
+      }
+    });
+    _readline.onDeactivate(function() {
+      if(_deactivationHandler) {
+        _deactivationHandler();
+      }
+    });
     _readline.onChange(function(line) {
       if(_suggestion) {
         $(_suggest_id).remove();

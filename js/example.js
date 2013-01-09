@@ -151,6 +151,5 @@
     shell.onDeactivate(function() {
       hideConsole();
     });
-    shell.activate();
   });
 })(this, $, _);
