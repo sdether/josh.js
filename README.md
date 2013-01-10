@@ -55,6 +55,9 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
+**0.2.2** -- 2013/01/09
+* changed rendering of completion to be more bash-like, i.e. now renders completion and then re-renders prompt with completed text, rather than as a pop-under that disappears.
+
 **0.2.1** -- 2013/01/08
 * fixed activation/deactivation propagation through the shell, which caused issues with first time activation via activation key instead of method call to fail.
 
