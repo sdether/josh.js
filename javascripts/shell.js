@@ -37,7 +37,6 @@ var Josh = Josh || {};
     var _readline = config.readline || new Josh.ReadLine({history: _history, console: _console});
     var _active = false;
     var _cursor_visible = false;
-    var _suggestion;
     var _itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
     var _activationHandler;
     var _deactivationHandler;
@@ -256,6 +255,22 @@ var Josh = Josh || {};
       return handler;
     }
 
+    function renderOutput(output, callback) {
+      if(output) {
+        $(_input_id).after(output);
+      }
+      $(_input_id + ' .input .cursor').css('textDecoration', '');
+      $(_input_id).removeAttr('id');
+      $(_shell_view_id).append(_input_html);
+      if(_promptHandler) {
+        return _promptHandler(function(prompt) {
+          self.setPrompt(prompt);
+          return callback();
+        });
+      }
+      return callback();
+    }
+
     // init
     _readline.onActivate(function() {
       _console.log("activating shell");
@@ -286,11 +301,6 @@ var Josh = Josh || {};
       }
     });
     _readline.onChange(function(line) {
-      if(_suggestion) {
-        $(_suggest_id).remove();
-        _suggestion = null;
-        self.scrollToBottom();
-      }
       _line = line;
       self.render();
     });
@@ -315,26 +325,12 @@ var Josh = Josh || {};
       var args = parts.slice(1);
       var handler = getHandler(cmd);
       return handler.exec(cmd, args, function(output, cmdtext) {
-        if(output) {
-          $(_input_id).after(output);
-        }
-        $(_input_id + ' .input .cursor').css('textDecoration', '');
-        $(_input_id).removeAttr('id');
-        $(_shell_view_id).append(_input_html);
-        if(_promptHandler) {
-          _promptHandler(function(prompt) {
-            self.setPrompt(prompt);
-            return callback(cmdtext);
-          });
-        }
-        return callback(cmdtext);
+        renderOutput(output, function() {
+          callback(cmdtext)
+        });
       });
     });
     _readline.onCompletion(function(line, callback) {
-      if(_suggestion) {
-        $(_suggest_id).remove();
-        _suggestion = null;
-      }
       if(!line) {
         return callback();
       }
@@ -373,15 +369,16 @@ var Josh = Josh || {};
         if(!match) {
           return callback();
         }
-        if(match.suggestions) {
-          _suggestion = $(_suggest_html);
+        if(match.suggestions && match.suggestions.length > 1) {
+          var suggestion = $(_suggest_html);
           for(var i = 0; i < match.suggestions.length; i++) {
             _console.log("suggestion: " + match.suggestions[i]);
-            _suggestion.append($("<div></div>").text(match.suggestions[i]));
+            suggestion.append($("<div></div>").text(match.suggestions[i]));
           }
-          $(_input_id).after(_suggestion);
+          return renderOutput(suggestion, function() {
+            callback(match.completion);
+          });
         }
-        self.scrollToBottom();
         return callback(match.completion);
       });
     });
