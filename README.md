@@ -19,8 +19,12 @@ josh.js is licensed under the Apache 2.0 License
   * Tested under Chrome, Firefox, Safari and IE9
   * API may not yet be stable
 * needs minified versions of complete toolkit and just readline.js
-* needs code documentation and documenation site
+* needs code documentation and documentation site
 * would like to add AMD support
+* base shell UI should get some basic behaviors
+  * `more`-like handling for output that exceeds the shell viewport size
+  * resizing and close chrome
+  * scrollwheel support
 
 ## Usage
 
@@ -54,6 +58,11 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 `history.js` implements a localStorage back command history storage that persists over page changes and reloads. It is used by the `shell.js` history command to list all executed commands, and by `readline.js` for up/down arrow and reverse search capabilities.
 
 ## Changelog
+
+**0.2.3** -- 2013/03/09
+* changed internal handling of the default command handler (i.e. when no named command is defined).
+* removed the pathhandler commandhandlers from the public object, since they should be accessed via shell.getCommandHandler if required
+* some readline.js property naming cleanup to make closure compiler happy
 
 **0.2.2** -- 2013/01/09
 * changed rendering of completion to be more bash-like, i.e. now renders completion and then re-renders prompt with completed text, rather than as a pop-under that disappears.
