@@ -22,26 +22,11 @@ var Josh = Josh || {};
       }
     });
     var _shell = shell;
+    var _original_default = _shell.getCommandHandler('_default');
     var self = {
-      handlers: {
-        ls: {
-          exec: ls,
-          completion: pathCompletionHandler
-        },
-        exec: {
-          exec: exec,
-          completion: commandAndPathCompletionHandler
-        },
-        cd: {
-          exec: cd,
-          completion: pathCompletionHandler
-        },
-        pwd: {
-          exec: pwd,
-          completion: pathCompletionHandler
-        }
-      },
+      current: null,
       pathCompletionHandler: pathCompletionHandler,
+      commandAndPathCompletionHandler: commandAndPathCompletionHandler,
       templates: {
         not_found: _.template("<div><%=cmd%>: <%=path%>: No such file or directory</div>"),
         ls: _.template("<div><% _.each(nodes, function(node) { %><span><%=node.name%>&nbsp;</span><% }); %></div>"),
@@ -56,15 +41,25 @@ var Josh = Josh || {};
       },
       getPrompt: function() {
         return self.templates.prompt({node: self.current});
-      },
-      current: null
+      }
     };
 
-    self.handlers._original_exec = _shell.getCommandHandler('_exec');
-    _shell.setCommandHandler("ls", self.handlers.ls);
-    _shell.setCommandHandler("pwd", self.handlers.pwd);
-    _shell.setCommandHandler("cd", self.handlers.cd);
-    _shell.setCommandHandler("_exec", self.handlers.exec);
+    _shell.setCommandHandler("ls", {
+      exec: ls,
+      completion: pathCompletionHandler
+    });
+    _shell.setCommandHandler("pwd", {
+      exec: pwd,
+      completion: pathCompletionHandler
+    });
+    _shell.setCommandHandler("cd", {
+      exec: cd,
+      completion: pathCompletionHandler
+    });
+    _shell.setCommandHandler("_default", {
+      exec: exec,
+      completion: commandAndPathCompletionHandler
+    });
     _shell.onNewPrompt(function(callback) {
       callback(self.getPrompt());
     });
@@ -73,7 +68,7 @@ var Josh = Josh || {};
       if(arg[0] == '.' || arg[0] == '/') {
         return pathCompletionHandler(cmd, arg, line, callback);
       }
-      return self.handlers._original_exec.completion(cmd, arg, line, callback);
+      return _original_default.completion(cmd, arg, line, callback);
     }
 
     function pathCompletionHandler(cmd, arg, line, callback) {
