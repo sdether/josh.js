@@ -77,18 +77,12 @@ var Josh = Josh || {};
           callback(content);
         },
         completion: function(cmd, arg, line, callback) {
-          callback(self.bestMatch(arg, self.commands()))
+          if(!arg) {
+            arg = cmd;
+          }
+          return callback(self.bestMatch(arg, self.commands()))
         }
       }
-//      _exec: {
-//        exec: function(cmd, args, callback) {
-//          var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
-//          callback(content);
-//        },
-//        completion: function(cmd, arg, line, callback) {
-//          callback(self.bestMatch(arg, self.commands()))
-//        }
-//      }
     };
     var _line = {
       text: '',
@@ -252,16 +246,6 @@ var Josh = Josh || {};
 
     function getHandler(cmd) {
       return _cmdHandlers[cmd] || _cmdHandlers._default;
-      var handler;
-      if(!cmd) {
-        handler = _cmdHandlers._default;
-      } else {
-        handler = _cmdHandlers[cmd];
-      }
-      if(!handler) {
-        handler = _cmdHandlers._default;
-      }
-      return handler;
     }
 
     function renderOutput(output, callback) {

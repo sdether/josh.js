@@ -57,7 +57,7 @@ var Josh = Josh || {};
       completion: pathCompletionHandler
     });
     _shell.setCommandHandler("_default", {
-      exec: exec,
+      exec: _original_default.exec,
       completion: commandAndPathCompletionHandler
     });
     _shell.onNewPrompt(function(callback) {
@@ -65,6 +65,10 @@ var Josh = Josh || {};
     });
 
     function commandAndPathCompletionHandler(cmd, arg, line, callback) {
+      _console.log("calling command and path completion handler w/ cmd: '"+cmd+"', arg: '"+arg+"'");
+      if(!arg) {
+        arg = cmd;
+      }
       if(arg[0] == '.' || arg[0] == '/') {
         return pathCompletionHandler(cmd, arg, line, callback);
       }
@@ -107,10 +111,6 @@ var Josh = Josh || {};
           return x.name;
         })));
       });
-    }
-
-    function exec(cmd, args, callback) {
-      callback();
     }
 
     function cd(cmd, args, callback) {
