@@ -75,15 +75,12 @@ var Josh = Josh || {};
         exec: function(cmd, args, callback) {
           var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
           callback(content);
-        }
-      },
-      _exec: {
-        exec: function(cmd, args, callback) {
-          var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
-          callback(content);
         },
         completion: function(cmd, arg, line, callback) {
-          callback(self.bestMatch(arg, self.commands()))
+          if(!arg) {
+            arg = cmd;
+          }
+          return callback(self.bestMatch(arg, self.commands()))
         }
       }
     };
@@ -94,6 +91,8 @@ var Josh = Josh || {};
     var _searchMatch = '';
     var _view, _panel;
     var _promptHandler;
+    var _initializationHandler;
+    var _initialized;
 
     // public methods
     var self = {
@@ -122,6 +121,9 @@ var Josh = Josh || {};
           return;
         }
         self.refresh();
+      },
+      onInitialize: function(completionHandler) {
+        _initializationHandler = completionHandler;
       },
       onActivate: function(completionHandler) {
         _activationHandler = completionHandler;
@@ -243,16 +245,7 @@ var Josh = Josh || {};
     }
 
     function getHandler(cmd) {
-      var handler;
-      if(!cmd) {
-        handler = _cmdHandlers._default;
-      } else {
-        handler = _cmdHandlers[cmd];
-      }
-      if(!handler) {
-        handler = _cmdHandlers._default;
-      }
-      return handler;
+      return _cmdHandlers[cmd] || _cmdHandlers._default;
     }
 
     function renderOutput(output, callback) {
@@ -271,11 +264,10 @@ var Josh = Josh || {};
       return callback();
     }
 
-    // init
-    _readline.onActivate(function() {
+    function activate() {
       _console.log("activating shell");
       if(!_view) {
-      _view = $(_shell_view_id);
+        _view = $(_shell_view_id);
       }
       if(!_panel) {
         _panel = $(_shell_panel_id);
@@ -294,6 +286,17 @@ var Josh = Josh || {};
       if(_activationHandler) {
         _activationHandler();
       }
+    }
+
+    // init
+    _readline.onActivate(function() {
+      if(!_initialized) {
+        _initialized = true;
+        if(_initializationHandler) {
+          return _initializationHandler(activate);
+        }
+      }
+      return activate();
     });
     _readline.onDeactivate(function() {
       if(_deactivationHandler) {
@@ -340,22 +343,10 @@ var Josh = Josh || {};
       var cmd = parts.shift() || '';
       var arg = parts.pop() || '';
       _console.log("getting completion handler for " + cmd);
-      var handler = _cmdHandlers[cmd];
-      if(!handler) {
-        if(arg) {
-          if(!_cmdHandlers._default.completion) {
+      var handler = getHandler(cmd);
+      if(handler != _cmdHandlers._default && cmd && cmd == text) {
 
-            // we have an argument, i.e. this isn't command completion, but we have no handler for command nor a completion handler for default
-            return callback();
-          }
-        }
-
-        // let's try command completion
-        handler = _cmdHandlers._exec;
-        arg = cmd;
-        cmd = 'exec';
-      } else if(cmd == text) {
-
+        _console.log("valid cmd, no args: append space");
         // the text to complete is just a valid command, append a space
         return callback(' ');
       }

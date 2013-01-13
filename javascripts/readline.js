@@ -127,18 +127,16 @@ var Josh = Josh || {};
 
     // private methods
     function getKeyInfo(e) {
+      var code = e.keyCode || e.charCode;
+      var c = String.fromCharCode(code);
       var info = {
-        code: e.keyCode || e.charCode,
+        code: code,
+        character: c,
         shift: e.shiftKey,
         control: e.controlKey,
         alt: e.altKey,
         isChar: true
       };
-
-      var code = info.code;
-      var c = String.fromCharCode(code);
-      info.name = SPECIAL[code] || c;
-      info.char = c;
       return info;
     }
 
@@ -632,9 +630,9 @@ var Josh = Josh || {};
       }
       queue(function cmdKeyPress() {
         if(_inSearch) {
-          addSearchText(key.char);
+          addSearchText(key.character);
         } else {
-          addText(key.char);
+          addText(key.character);
         }
         if(_onKeydown) {
           _onKeydown(key);
