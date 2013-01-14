@@ -25,6 +25,8 @@ josh.js is licensed under the Apache 2.0 License
   * `more`-like handling for output that exceeds the shell viewport size
   * resizing and close chrome
   * scrollwheel support
+* Known Issues:
+  * Not handling spaces in path completion
 
 ## Usage
 
@@ -59,7 +61,11 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
-**0.2.3** -- 2013/03/09
+**0.2.4** -- 2013/01/14
+* fixed path completion handling for scenarios of two possible completions where one is the root of the other
+* noted that spaces in paths are completely unsupported right now.. they will complete, but the exec handler will see the space as a separator between arguments
+
+**0.2.3** -- 2013/01/13
 * changed internal handling of the default command handler (i.e. when no named command is defined).
 * removed the pathhandler commandhandlers from the public object, since they should be accessed via shell.getCommandHandler if required
 * some readline.js property naming cleanup to make closure compiler happy

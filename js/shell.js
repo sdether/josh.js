@@ -167,6 +167,7 @@ var Josh = Josh || {};
         _panel.animate({scrollTop: _view.height()}, 0);
       },
       bestMatch: function(partial, possible) {
+        _console.log("bestMatch on partial '"+partial+"'");
         var result = {
           completion: null,
           suggestions: []
