@@ -167,6 +167,7 @@ var Josh = Josh || {};
         _panel.animate({scrollTop: _view.height()}, 0);
       },
       bestMatch: function(partial, possible) {
+        _console.log("bestMatch on partial '"+partial+"'");
         var result = {
           completion: null,
           suggestions: []
@@ -187,7 +188,6 @@ var Josh = Josh || {};
             result.suggestions = possible;
             return result;
           }
-          common = possible[0][0];
         }
         for(var i = 0; i < possible.length; i++) {
           var option = possible[i];
