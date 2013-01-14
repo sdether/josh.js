@@ -76,31 +76,39 @@ var Josh = Josh || {};
     }
 
     function pathCompletionHandler(cmd, arg, line, callback) {
-      _console.log("completing '" + arg+ "'");
-      var partial = "";
-      self.getNode(arg, function(node) {
-        if(!node) {
-          _console.log("no node");
-          var lastPathSeparator = arg.lastIndexOf("/");
-          if(lastPathSeparator == arg.length - 1) {
+      _console.log("completing '" + arg + "'");
+      if(!arg) {
+        _console.log("completing on current");
+        return completeChildren(self.current, '', callback);
+      }
+      if(arg[arg.length - 1] == '/') {
+        _console.log("completing children w/o partial");
+        return self.getNode(arg, function(node) {
+          if(!node) {
+            _console.log("no node for path");
             return callback();
           }
-          var parent = arg.substr(0, lastPathSeparator + 1);
-          _console.log("parent: " + parent);
-          partial = arg.substr(lastPathSeparator + 1);
-          return self.getNode(parent, function(node) {
-            if(!node) {
-              return callback();
-            }
-            return completeChildren(node, partial, callback);
-          });
+          return completeChildren(node, '', callback);
+        });
+      }
+      var partial = "";
+      var lastPathSeparator = arg.lastIndexOf("/");
+      var parent = arg.substr(0, lastPathSeparator + 1);
+      partial = arg.substr(lastPathSeparator + 1);
+      _console.log("completing children via parent '" + parent+"'  w/ partial '"+partial+"'");
+      return self.getNode(parent, function(node) {
+        if(!node) {
+          _console.log("no node for parent path");
+          return callback();
         }
-        if(!arg || arg[arg.length - 1] == '/') {
-          return completeChildren(node, partial, callback);
-        }
-        return callback({
-          completion: '/',
-          suggestions: []
+        return completeChildren(node, partial, function(completion) {
+          if(completion && completion.completion == '' && completion.suggestions.length == 1) {
+            return callback({
+              completion: '/',
+              suggestions: []
+            });
+          }
+          return callback(completion);
         });
       });
     }

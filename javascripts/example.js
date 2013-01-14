@@ -31,7 +31,19 @@
         x11: {}
       },
       home: {
-        bob: {},
+        bob: {
+          video: {
+            'firefly.m4v': {}
+          },
+          videos: {
+            'Arrested Development': {
+              's1e1.m4v': {}
+            },
+            'Better Off Ted': {
+              's1e1.m4v': {}
+            }
+          }
+        },
         jane: {}
       },
       lib: {},
