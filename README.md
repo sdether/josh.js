@@ -25,8 +25,10 @@ josh.js is licensed under the Apache 2.0 License
   * `more`-like handling for output that exceeds the shell viewport size
   * resizing and close chrome
   * scrollwheel support
-* Known Issues:
+* Readline Issues/Omissions
   * Not handling spaces in path completion
+  * Missing support for Alt-Backspace & Alt-D in readline.js
+  * ***Word***-commands do not have path separator awareness
 
 ## Usage
 

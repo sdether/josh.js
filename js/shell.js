@@ -188,7 +188,6 @@ var Josh = Josh || {};
             result.suggestions = possible;
             return result;
           }
-          common = possible[0][0];
         }
         for(var i = 0; i < possible.length; i++) {
           var option = possible[i];

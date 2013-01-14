@@ -31,15 +31,19 @@
         x11: {}
       },
       home: {
-      bob: {
-        video: {
-          'firefly.m4v': {}
+        bob: {
+          video: {
+            'firefly.m4v': {}
+          },
+          videos: {
+            'Arrested Development': {
+              's1e1.m4v': {}
+            },
+            'Better Off Ted': {
+              's1e1.m4v': {}
+            }
+          }
         },
-        videos: {
-          'Arrested Development': {},
-          'Better Off Ted': {}
-        }
-      },
         jane: {}
       },
       lib: {},
@@ -156,6 +160,12 @@
         consolePanel.blur();
       }
 
+      shell.onActivate(function() {
+        showConsole();
+      });
+      shell.onDeactivate(function() {
+        hideConsole();
+      });
     });
     return {
       Tree: root,
