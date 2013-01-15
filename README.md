@@ -25,10 +25,8 @@ josh.js is licensed under the Apache 2.0 License
   * `more`-like handling for output that exceeds the shell viewport size
   * resizing and close chrome
   * scrollwheel support
-* Readline Issues/Omissions
-  * Not handling spaces in path completion
-  * Missing support for Alt-Backspace & Alt-D in readline.js
-  * ***Word***-commands do not have path separator awareness
+* Readline has not been tested with non-ascii.
+* [Readline Issues/Omissions](https://github.com/sdether/josh.js/issues/1)
 
 ## Usage
 
@@ -43,6 +41,58 @@ Until documentation is written, refer to `index.html` and `example.js` for a sam
 
 It implements key trapping to bring [GNU Readline](http://cnswww.cns.cwru.edu/php/chet/readline/readline.html) like line editing to the browser. It can be used by itself to bring readline support to custom data entry fields or in conjunction with `shell.js` to create a full console.
 
+#### Line Editing
+In the below `C-x` refers to the `Ctrl-x` keystroke, while `M-x` refers to the `Meta-x` which is currently only mapped to `Alt` (i.e. no `⌘` yet).
+
+
+<dl>
+<dt><em>Movement</em></dt>
+<dt><code>C-b</code> or <code>Left Arrow</code></dt>
+<dd>Move back one character</dd>
+<dt><code>M-b</code> or <code>Right Arrow</code></dt>
+<dd>Move back one word</dd>
+<dt><code>C-f</code></dt>
+<dd>Move forward one character</dd>
+<dt><code>M-f</code></dt>
+<dd>Move forward one word</dd>
+<dt><code>C-a</code> or <code>Home</code></dt>
+<dd>Move to the beginning of the line</dd>
+<dt><code>C-e</code> or <code>End</code></dt>
+<dd>Move to the end of the line</dd>
+
+<dt><em>Edit/Kill</em></dt>
+<dt><code>Backspace</code></dt>
+<dd>Delete one character back</dd>
+<dt><code>C-d</code> or <code>Delete</code></dt>
+<dd>Delete character under cursor</dd>
+<dt><code>C-k</code></dt>
+<dd><em>Kill</em> (i.e. put in kill buffer) text to the end of the line</dd>
+<dt><code>C-y</code></dt>
+<dd><em>Yank</em> (i.e. pull from kill buffer) the most recently <em>killed</em> text</dd>
+
+<dt><em>History</em></dt>
+<dt><code>C-r</code></dt>
+<dd>Reverse search through history</dd>
+<dt><code>C-p</code> or <code>Up Arrow</code></dt>
+<dd>Previous entry in history</dd>
+<dt><code>C-n</code> or <code>Down Arrow</code></dt>
+<dd>Next entry in history</dd>
+<dt><code>Page Up</code></dt>
+<dd>Top of history</dd>
+<dt><code>Page Down</code></dt>
+<dd>Bottom of history</dd>
+
+<dt><em>Misc</em></dt>
+<dt><code>C-l</code></dt>
+<dd>refresh line (clear screen in shell)</dd>
+<dt><code>Tab</code></dt>
+<dd>Invoke completion handler for text under cursor</dd>
+<dt><code>C-c</code> or <code>Esc</code></dt>
+<dd>Deactivate Readline (closes the shell)</dd>
+<dt><code>~</code></dt>
+<dd>Activate Readline (opens the shell)</dd>
+</dl>
+  
 ### shell.js
 `shell.js` has external dependencies of [jQuery](http://jquery.com/), [Underscore](http://underscorejs.org/) and internal dependencies of `readline.js` and `history.js`.
 

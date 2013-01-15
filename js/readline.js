@@ -56,6 +56,7 @@ var Josh = Josh || {};
     var _onChange;
     var _onCancel;
     var _onEOT;
+    var _onClear;
     var _onSearchStart;
     var _onSearchEnd;
     var _onSearchChange;
@@ -95,6 +96,9 @@ var Josh = Josh || {};
       },
       onChange: function(changeHandler) {
         _onChange = changeHandler;
+      },
+      onClear: function(completionHandler) {
+        _onClear = completionHandler;
       },
       onEnter: function(enterHandler) {
         _onEnter = enterHandler;
@@ -267,42 +271,59 @@ var Josh = Josh || {};
       if(_cursor == 0) {
         return;
       }
-      var previousWhitespace = 0;
-      var findNonWhiteSpace = _text[_cursor] == ' ' || _text[_cursor - 1] == ' ';
-      for(var i = _cursor - 1; i > 0; i--) {
-        if(findNonWhiteSpace) {
-          if(_text[i] != ' ') {
-            findNonWhiteSpace = false;
-          }
-        } else {
-          if(_text[i] == ' ') {
-            previousWhitespace = i + 1;
-            break;
-          }
-        }
+      updateCursor(findBeginningOfPreviousWord());
+    }
+
+    function findBeginningOfPreviousWord() {
+      var position = _cursor - 1;
+      if(position < 0) {
+        return 0;
       }
-      updateCursor(previousWhitespace);
+      var word = false;
+      for(var i = position; i > 0; i--) {
+        var word2 = isWordChar(_text[i]);
+        if(word && !word2) {
+          return i + 1;
+        }
+        word = word2;
+      }
+      return 0;
+    }
+
+    function findEndOfCurrentWord() {
+      if(_text.length == 0) {
+        return 0;
+      }
+      var position = _cursor + 1;
+      if(position >= _text.length) {
+        return _text.length - 1;
+      }
+      var word = false;
+      for(var i = position; i < _text.length; i++) {
+        var word2 = isWordChar(_text[i]);
+        if(word && !word2) {
+          return i;
+        }
+        word = word2;
+      }
+      return _text.length - 1;
+    }
+
+    function isWordChar(c) {
+      if(c == undefined) {
+        return false;
+      }
+      var code = c.charCodeAt(0);
+      return (code >= 48 && code <= 57)
+        || (code >= 65 && code <= 90)
+        || (code >= 97 && code <= 122);
     }
 
     function cmdForwardWord() {
       if(_cursor == _text.length) {
         return;
       }
-      var nextWhitespace = _text.length;
-      var findNonWhitespace = _text[_cursor] == ' ';
-      for(var i = _cursor + 1; i < _text.length; i++) {
-        if(findNonWhitespace) {
-          if(_text[i] != ' ') {
-            findNonWhitespace = false;
-          }
-        } else {
-          if(_text[i] == ' ') {
-            nextWhitespace = i;
-            break;
-          }
-        }
-      }
-      updateCursor(nextWhitespace);
+      updateCursor(findEndOfCurrentWord());
     }
 
     function cmdHistoryPrev() {
@@ -358,8 +379,12 @@ var Josh = Josh || {};
       updateCursor(_cursor + _kill_buffer.length);
     }
 
-    function cmdRefresh() {
-      refresh();
+    function cmdClear() {
+      if(_onClear) {
+        _onClear();
+      } else {
+        refresh();
+      }
     }
 
     function cmdReverseSearch() {
@@ -576,7 +601,7 @@ var Josh = Josh || {};
               handled = true;
               break;
             case 76: // L
-              queue(cmdRefresh);
+              queue(cmdClear);
               handled = true;
               break;
             case 82: // R
