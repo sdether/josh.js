@@ -17,6 +17,7 @@
 var Josh = Josh || {};
 (function(root, $, _) {
   Josh.PathHandler = function(shell, config) {
+    config = config || {};
     var _console = config.console || (Josh.Debug && root.console ? root.console : {
       log: function() {
       }
