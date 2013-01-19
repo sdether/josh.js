@@ -42,8 +42,7 @@ Until documentation is written, refer to `index.html` and `example.js` for a sam
 It implements key trapping to bring [GNU Readline](http://cnswww.cns.cwru.edu/php/chet/readline/readline.html) like line editing to the browser. It can be used by itself to bring readline support to custom data entry fields or in conjunction with `shell.js` to create a full console.
 
 #### Line Editing
-In the below `C-x` refers to the `Ctrl-x` keystroke, while `M-x` refers to the `Meta-x` which is currently only mapped to `Alt` (i.e. no `⌘` yet).
-
+In the below `C-x` refers to the `Ctrl-x` keystroke, while `M-x` refers to the `Meta-x` which is mapped to `Alt`, `⌘` and `Left Windows`.
 
 <dl>
 <dt><em>Movement</em></dt>
@@ -63,8 +62,12 @@ In the below `C-x` refers to the `Ctrl-x` keystroke, while `M-x` refers to the `
 <dt><em>Edit/Kill</em></dt>
 <dt><code>Backspace</code></dt>
 <dd>Delete one character back</dd>
+<dt><code>M-Backspace</code></dt>
+<dd>Delete one word back</dd>
 <dt><code>C-d</code> or <code>Delete</code></dt>
 <dd>Delete character under cursor</dd>
+<dt><code>M-d</code></dt>
+<dd>Delete word under cursor</dd>
 <dt><code>C-k</code></dt>
 <dd><em>Kill</em> (i.e. put in kill buffer) text to the end of the line</dd>
 <dt><code>C-y</code></dt>
