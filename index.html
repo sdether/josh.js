@@ -18,8 +18,8 @@
     <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
-    <script>Josh = {Debug: true };</script>
     <script src="javascripts/history.js"></script>
+    <script src="javascripts/killring.js"></script>
     <script src="javascripts/readline.js"></script>
     <script src="javascripts/shell.js"></script>
     <script src="javascripts/pathhandler.js"></script>
@@ -28,17 +28,20 @@
         #shell-panel {
             display: none;
             height: 400px;
-            width: 100%;
+            width: 97.0%;
             opacity: 0.9;
             background-color: #002f05;
             color: #00fe00;
             position: fixed;
             padding: 20px 20px 20px 20px;
             top: 0;
+            left: 0;
             z-index: 1000;
             font-family: 'Source Code Pro', sans-serif;
             font-size: 0.9em;
-            overflow: hidden;
+            overflow: scroll;
+            overflow-x: hidden;
+            overflow-y: scroll;
         }</style>
 </head>
 <body>
@@ -89,6 +92,9 @@
             <li>
                 <code>history.js</code> - localStorage backed command history
             </li>
+            <li>
+                <code>killring.js</code> - killring for kill &amp; yank handling in readline
+            </li>
         </ul>
 
         <h2>Demo</h2>
@@ -99,7 +105,8 @@
 
         <p>josh.js is licensed under the Apache 2.0 License</p>
 
-        <h2>Status</h2>
+        <h2>
+            <a name="status" class="anchor" href="#status"><span class="mini-icon mini-icon-link"></span></a>Status</h2>
 
         <ul>
             <li>code is ready for experimental use
@@ -116,41 +123,128 @@
 
                 <ul>
                     <li>
-                        <code>more</code>-like handling for output that exceeds the shell viewport size</li>
+                        <code>more</code>-like handling for output that exceeds the shell viewport size
+                    </li>
                     <li>resizing and close chrome</li>
-                    <li>scrollwheel support</li>
                 </ul>
             </li>
-            <li>Readline Issues/Omissions
-
-                <ul>
-                    <li>Not handling spaces in path completion</li>
-                    <li>Missing support for Alt-Backspace &amp; Alt-D in readline.js</li>
-                    <li>
-                        <em>Word</em> commands do not have path separator awareness</li>
-                </ul>
-            </li>
+            <li>Readline has not been tested with non-ascii.</li>
         </ul>
-
-        <h2>Usage</h2>
+        <h2>
+            <a name="usage" class="anchor" href="#usage"><span class="mini-icon mini-icon-link"></span></a>Usage</h2>
 
         <p>Until documentation is written, refer to <code>index.html</code> and
             <code>example.js</code> for a sample implementation of a shell with path completion.</p>
 
-        <h2>Components</h2>
+        <h2>
+            <a name="components" class="anchor" href="#components"><span class="mini-icon mini-icon-link"></span></a>Components
+        </h2>
 
-        <p><strong><em>josh</em></strong> is built from 4 components and can be used in part or in full.</p>
+        <p><strong><em>josh</em></strong> is built from 5 components and can be used in part or in full.</p>
 
-        <h3>readline.js</h3>
+        <h3>
+            <a name="readlinejs" class="anchor" href="#readlinejs"><span class="mini-icon mini-icon-link"></span></a>readline.js
+        </h3>
 
         <p><code>readline.js</code> has no dependencies on any outside libraries, although it requires either
-            <code>history.js</code> or an object implementing the same calls.</p>
+            <code>history.js</code> and <code>killring.js</code> or objects implementing the same calls.</p>
 
         <p>It implements key trapping to bring
             <a href="http://cnswww.cns.cwru.edu/php/chet/readline/readline.html">GNU Readline</a> like line editing to the browser. It can be used by itself to bring readline support to custom data entry fields or in conjunction with
             <code>shell.js</code> to create a full console.</p>
 
-        <h3>shell.js</h3>
+        <h4>
+            <a name="line-editing" class="anchor" href="#line-editing"><span class="mini-icon mini-icon-link"></span></a>Line Editing
+        </h4>
+
+        <p>In the below <code>C-x</code> refers to the <code>Ctrl-x</code> keystroke, while
+            <code>M-x</code> refers to the <code>Meta-x</code> which is mapped to <code>Alt</code>, <code>⌘</code> and
+            <code>Left Windows</code>.</p>
+
+        <dl>
+            <dt><em>Movement</em></dt>
+            <dt>
+                <code>C-b</code> or <code>Left Arrow</code>
+            </dt>
+            <dd>Move back one character</dd>
+            <dt>
+                <code>M-b</code> or <code>Right Arrow</code>
+            </dt>
+            <dd>Move back one word</dd>
+            <dt><code>C-f</code></dt>
+            <dd>Move forward one character</dd>
+            <dt><code>M-f</code></dt>
+            <dd>Move forward one word</dd>
+            <dt>
+                <code>C-a</code> or <code>Home</code>
+            </dt>
+            <dd>Move to the beginning of the line</dd>
+            <dt>
+                <code>C-e</code> or <code>End</code>
+            </dt>
+            <dd>Move to the end of the line</dd>
+
+            <br>
+            <dt><em>Edit/Kill</em></dt>
+            <dt><code>Backspace</code></dt>
+            <dd>Delete one character back</dd>
+            <dt>
+                <code>C-d</code> or <code>Delete</code>
+            </dt>
+            <dd>Delete character under cursor</dd>
+            <dt><code>C-k</code></dt>
+            <dd>
+                <em>Kill</em> (i.e. put in kill ring) text to the end of the line
+            </dd>
+            <dt><code>M-Backspace</code></dt>
+            <dd>
+                <em>Kill</em> one word back
+            </dd>
+            <dt><code>M-d</code></dt>
+            <dd>
+                <em>Kill</em> word under cursor
+            </dd>
+            <dt><code>C-y</code></dt>
+            <dd>
+                <em>Yank</em> (i.e. pull from kill ring) the most recently <em>killed</em> text
+            </dd>
+            <dt><code>M-y</code></dt>
+            <dd>Rotate to the next item in killring and yank it. Must be preceded by <em>yank</em>
+            </dd>
+
+            <br>
+            <dt><em>History</em></dt>
+            <dt><code>C-r</code></dt>
+            <dd>Reverse search through history</dd>
+            <dt>
+                <code>C-p</code> or <code>Up Arrow</code>
+            </dt>
+            <dd>Previous entry in history</dd>
+            <dt>
+                <code>C-n</code> or <code>Down Arrow</code>
+            </dt>
+            <dd>Next entry in history</dd>
+            <dt><code>Page Up</code></dt>
+            <dd>Top of history</dd>
+            <dt><code>Page Down</code></dt>
+            <dd>Bottom of history</dd>
+
+            <br>
+            <dt><em>Misc</em></dt>
+            <dt><code>C-l</code></dt>
+            <dd>refresh line (clear screen in shell)</dd>
+            <dt><code>Tab</code></dt>
+            <dd>Invoke completion handler for text under cursor</dd>
+            <dt>
+                <code>C-c</code> or <code>Esc</code>
+            </dt>
+            <dd>Deactivate Readline (closes the shell)</dd>
+            <dt><code>~</code></dt>
+            <dd>Activate Readline (opens the shell)</dd>
+        </dl>
+        <h3>
+            <a name="shelljs" class="anchor" href="#shelljs"><span class="mini-icon mini-icon-link"></span></a>shell.js
+        </h3>
 
         <p><code>shell.js</code> has external dependencies of <a href="http://jquery.com/">jQuery</a>,
             <a href="http://underscorejs.org/">Underscore</a> and internal dependencies of <code>readline.js</code> and
@@ -169,7 +263,9 @@
             <li>history - show the command history captured by <code>readline.js</code> in <code>history.js</code>
             </li>
         </ul>
-        <h3>pathhandler.js</h3>
+        <h3>
+            <a name="pathhandlerjs" class="anchor" href="#pathhandlerjs"><span class="mini-icon mini-icon-link"></span></a>pathhandler.js
+        </h3>
 
         <p><code>pathhandler.js</code> is a mix in to easily add the <code>cd</code>, <code>ls</code> and
             <code>pwd</code> commands as well as path completion. It has the same external dependencies of
@@ -180,12 +276,22 @@
             <code>getChildNodes</code>, this library adds path traversal, discovery and completion just like a bash shell.
         </p>
 
-        <h3>history.js</h3>
+        <h3>
+            <a name="historyjs" class="anchor" href="#historyjs"><span class="mini-icon mini-icon-link"></span></a>history.js
+        </h3>
 
         <p>
             <code>history.js</code> implements a localStorage back command history storage that persists over page changes and reloads. It is used by the
             <code>shell.js</code> history command to list all executed commands, and by
             <code>readline.js</code> for up/down arrow and reverse search capabilities.</p>
+
+        <h3>
+            <a name="killringjs" class="anchor" href="#killringjs"><span class="mini-icon mini-icon-link"></span></a>killring.js
+        </h3>
+
+        <p>
+            <code>killing.js</code> implements the kill and yank behavior as well as state tracking, i.e. multiple consecutive kills are combined as a single kill and killring rotation tracks the previous yank, so that the
+            <code>readline.js</code> can remove the previous yank and replace it with the rotated text.</p>
 
     </section>
 

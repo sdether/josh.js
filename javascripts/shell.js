@@ -167,7 +167,7 @@ var Josh = Josh || {};
         _panel.animate({scrollTop: _view.height()}, 0);
       },
       bestMatch: function(partial, possible) {
-        _console.log("bestMatch on partial '"+partial+"'");
+        _console.log("bestMatch on partial '" + partial + "'");
         var result = {
           completion: null,
           suggestions: []
@@ -306,6 +306,12 @@ var Josh = Josh || {};
     _readline.onChange(function(line) {
       _line = line;
       self.render();
+    });
+    _readline.onClear(function() {
+      _cmdHandlers.clear.exec(null, null, function() {
+        renderOutput(null, function() {
+        });
+      });
     });
     _readline.onSearchStart(function() {
       $(_input_id).replaceWith(_search_html);
