@@ -15,62 +15,88 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
-(function (root) {
-  Josh.KillRing = function (config) {
+(function(root) {
+  Josh.KillRing = function(config) {
     config = config || {};
 
-    var _console = Josh.Debug && root.console ? root.console : {log:function () {
+    var _console = Josh.Debug && root.console ? root.console : {log: function() {
     }};
     var _ring = config.ring || [];
     var _cursor = config.cursor || 0;
-    var _current = '';
+    var _uncommitted = false;
     var _yanking = false;
-    if (_ring.length == 0) {
+    if(_ring.length == 0) {
       _cursor = -1;
-    } else if (_cursor >= _ring.length) {
+    } else if(_cursor >= _ring.length) {
       _cursor = _ring.length - 1;
     }
     var self = {
-      append:function (value) {
-        _yanking = false;
-        if (!value) {
-          return;
-        }
-        _current += value;
+      isinkill: function() {
+        return _uncommitted;
       },
-      prepend:function (value) {
-        _yanking = false;
-        if (!value) {
-          return;
+      lastyanklength: function() {
+        if(!_yanking) {
+          return 0;
         }
-        _current = value + _current;
+        return _ring[_cursor].length;
       },
-      commit:function () {
+      append: function(value) {
         _yanking = false;
-        if (!_current) {
+        if(!value) {
           return;
         }
-        _ring.push(_current);
+        if(_ring.length == 0 || !_uncommitted) {
+          _ring.push('');
+        }
         _cursor = _ring.length - 1;
-        _current = '';
+        _console.log("appending: " + value);
+        _uncommitted = true;
+        _ring[_cursor] += value;
       },
-      yank:function () {
-        self.commit();
-        if (_ring.length == 0) {
+      prepend: function(value) {
+        _yanking = false;
+        if(!value) {
           return;
+        }
+        if(_ring.length == 0 || !_uncommitted) {
+          _ring.push('');
+        }
+        _cursor = _ring.length - 1;
+        _console.log("prepending: " + value);
+        _uncommitted = true;
+        _ring[_cursor] = value + _ring[_cursor];
+      },
+      commit: function() {
+        _console.log("committing");
+        _yanking = false;
+        _uncommitted = false;
+      },
+      yank: function() {
+        self.commit();
+        if(_ring.length == 0) {
+          return null;
         }
         _yanking = true;
         return _ring[_cursor];
       },
-      rotate:function () {
-        if (!_yanking || _ring.length == 0) {
-          return;
+      rotate: function() {
+        if(!_yanking || _ring.length == 0) {
+          return null;
         }
         --_cursor;
-        if (_cursor < 0) {
+        if(_cursor < 0) {
           _cursor = _ring.length - 1;
         }
         return self.yank();
+      },
+      items: function() {
+        return _ring.slice(0);
+      },
+      clear: function() {
+        _ring = [];
+        _cursor = -1;
+        _yanking = false;
+        _uncommited = false;
       }
     };
     return self;

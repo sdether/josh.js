@@ -28,6 +28,8 @@ josh.js is licensed under the Apache 2.0 License
 * Readline has not been tested with non-ascii.
 * [Readline Issues/Omissions](https://github.com/sdether/josh.js/issues/1)
 
+## Known Issues without 
+
 ## Usage
 
 Until documentation is written, refer to `index.html` and `example.js` for a sample implementation of a shell with path completion.

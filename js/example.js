@@ -128,7 +128,25 @@
     );
     root.path = '/';
     var history = Josh.History();
-    var shell = Josh.Shell({history: history, console: _console});
+    var killring = new Josh.KillRing();
+    var readline = new Josh.ReadLine({history: history, killring: killring, console: _console });
+    var shell = Josh.Shell({readline: readline, history: history, console: _console});
+    var killringItemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
+
+    shell.setCommandHandler("killring", {
+      exec: function(cmd, args, callback) {
+        if(args[0] == "-c") {
+          killring.clear();
+          callback();
+          return;
+        }
+        var content = $('<div></div>');
+        _.each(killring.items(), function(cmd, i) {
+          content.append(killringItemTemplate({cmd: cmd, i: i}));
+        });
+        callback(content);
+      }
+    });
     var pathhandler = Josh.PathHandler(shell, {console: _console});
     pathhandler.current = root;
     pathhandler.getNode = function(path, callback) {
@@ -167,10 +185,11 @@
         hideConsole();
       });
     });
-    return {
+    Josh.Instance = {
       Tree: root,
       Shell: shell,
-      PathHandler: pathhandler
+      PathHandler: pathhandler,
+      KillRing: killring
     };
   })(root, $, _);
 })(this, $, _);
