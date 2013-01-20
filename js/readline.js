@@ -47,6 +47,7 @@ var Josh = Josh || {};
     var _history = config.history || new Josh.History();
     var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true }; // ~
     var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
+    var _killring = config.killring || new Josh.KillRing();
     var _active = false;
     var _onActivate;
     var _onDeactivate;
@@ -56,6 +57,7 @@ var Josh = Josh || {};
     var _onChange;
     var _onCancel;
     var _onEOT;
+    var _onClear;
     var _onSearchStart;
     var _onSearchEnd;
     var _onSearchChange;
@@ -64,7 +66,6 @@ var Josh = Josh || {};
     var _lastSearchText = '';
     var _text = '';
     var _cursor = 0;
-    var _kill_buffer = '';
     var _lastCmd;
     var _completionActive;
     var _cmdQueue = [];
@@ -95,6 +96,9 @@ var Josh = Josh || {};
       },
       onChange: function(changeHandler) {
         _onChange = changeHandler;
+      },
+      onClear: function(completionHandler) {
+        _onClear = completionHandler;
       },
       onEnter: function(enterHandler) {
         _onEnter = enterHandler;
@@ -129,7 +133,7 @@ var Josh = Josh || {};
     function getKeyInfo(e) {
       var code = e.keyCode || e.charCode;
       var c = String.fromCharCode(code);
-      var info = {
+      return {
         code: code,
         character: c,
         shift: e.shiftKey,
@@ -137,7 +141,6 @@ var Josh = Josh || {};
         alt: e.altKey,
         isChar: true
       };
-      return info;
     }
 
     function queue(cmd) {
@@ -167,8 +170,26 @@ var Josh = Josh || {};
           _onSearchEnd();
         }
       }
+      if(!_inSearch && _killring.isinkill() && cmd.name.substr(0, 7) != 'cmdKill') {
+        _killring.commit();
+      }
       _lastCmd = cmd.name;
       cmd();
+    }
+
+    function suspend(asyncCall) {
+      _suspended = true;
+      asyncCall(resume);
+    }
+
+    function resume() {
+      var cmd = _cmdQueue.shift();
+      if(!cmd) {
+        _suspended = false;
+        return;
+      }
+      call(cmd);
+      resume();
     }
 
     function cmdCancelSearch() {
@@ -226,21 +247,6 @@ var Josh = Josh || {};
 
     }
 
-    function suspend(asyncCall) {
-      _suspended = true;
-      asyncCall(resume);
-    }
-
-    function resume() {
-      var cmd = _cmdQueue.shift();
-      if(!cmd) {
-        _suspended = false;
-        return;
-      }
-      call(cmd);
-      resume();
-    }
-
     function cmdEnd() {
       updateCursor(_text.length);
     }
@@ -267,42 +273,14 @@ var Josh = Josh || {};
       if(_cursor == 0) {
         return;
       }
-      var previousWhitespace = 0;
-      var findNonWhiteSpace = _text[_cursor] == ' ' || _text[_cursor - 1] == ' ';
-      for(var i = _cursor - 1; i > 0; i--) {
-        if(findNonWhiteSpace) {
-          if(_text[i] != ' ') {
-            findNonWhiteSpace = false;
-          }
-        } else {
-          if(_text[i] == ' ') {
-            previousWhitespace = i + 1;
-            break;
-          }
-        }
-      }
-      updateCursor(previousWhitespace);
+      updateCursor(findBeginningOfPreviousWord());
     }
 
     function cmdForwardWord() {
       if(_cursor == _text.length) {
         return;
       }
-      var nextWhitespace = _text.length;
-      var findNonWhitespace = _text[_cursor] == ' ';
-      for(var i = _cursor + 1; i < _text.length; i++) {
-        if(findNonWhitespace) {
-          if(_text[i] != ' ') {
-            findNonWhitespace = false;
-          }
-        } else {
-          if(_text[i] == ' ') {
-            nextWhitespace = i;
-            break;
-          }
-        }
-      }
-      updateCursor(nextWhitespace);
+      updateCursor(findEndOfCurrentWord());
     }
 
     function cmdHistoryPrev() {
@@ -348,18 +326,69 @@ var Josh = Josh || {};
     }
 
     function cmdKillToEOF() {
-      _kill_buffer = _text.substr(_cursor);
+      _killring.append(_text.substr(_cursor));
       _text = _text.substr(0, _cursor);
       refresh();
     }
 
-    function cmdYank() {
-      _text = insert(_text, _cursor, _kill_buffer);
-      updateCursor(_cursor + _kill_buffer.length);
+    function cmdKillWordForward() {
+      if(_text.length == 0) {
+        if(_onEOT) {
+          _onEOT();
+          return;
+        }
+      }
+      if(_cursor == _text.length) {
+        return;
+      }
+      var end = findEndOfCurrentWord();
+      _killring.append(_text.substring(_cursor, end))
+      _text = remove(_text, _cursor, end);
+      refresh();
     }
 
-    function cmdRefresh() {
+    function cmdKillWordBackward() {
+      if(_cursor == 0) {
+        return;
+      }
+      var oldCursor = _cursor;
+      _cursor = findBeginningOfPreviousWord();
+      _killring.prepend(_text.substring(_cursor, oldCursor));
+      _text = remove(_text, _cursor, oldCursor);
       refresh();
+    }
+
+    function cmdYank() {
+      var yank = _killring.yank();
+      if(!yank) {
+        return;
+      }
+      _text = insert(_text, _cursor, yank);
+      updateCursor(_cursor + yank.length);
+    }
+
+    function cmdRotate() {
+      var lastyanklength = _killring.lastyanklength();
+      if(!lastyanklength) {
+        return;
+      }
+      var yank = _killring.rotate();
+      if(!yank) {
+        return;
+      }
+      var oldCursor = _cursor;
+      _cursor = _cursor - lastyanklength;
+      _text = remove(_text, _cursor, oldCursor);
+      _text = insert(_text, _cursor, yank);
+      updateCursor(_cursor + yank.length);
+    }
+
+    function cmdClear() {
+      if(_onClear) {
+        _onClear();
+      } else {
+        refresh();
+      }
     }
 
     function cmdReverseSearch() {
@@ -429,6 +458,51 @@ var Josh = Josh || {};
         && Boolean(a.altKey) == Boolean(b.altKey);
     }
 
+    function findBeginningOfPreviousWord() {
+      var position = _cursor - 1;
+      if(position < 0) {
+        return 0;
+      }
+      var word = false;
+      for(var i = position; i > 0; i--) {
+        var word2 = isWordChar(_text[i]);
+        if(word && !word2) {
+          return i + 1;
+        }
+        word = word2;
+      }
+      return 0;
+    }
+
+    function findEndOfCurrentWord() {
+      if(_text.length == 0) {
+        return 0;
+      }
+      var position = _cursor + 1;
+      if(position >= _text.length) {
+        return _text.length - 1;
+      }
+      var word = false;
+      for(var i = position; i < _text.length; i++) {
+        var word2 = isWordChar(_text[i]);
+        if(word && !word2) {
+          return i;
+        }
+        word = word2;
+      }
+      return _text.length - 1;
+    }
+
+    function isWordChar(c) {
+      if(c == undefined) {
+        return false;
+      }
+      var code = c.charCodeAt(0);
+      return (code >= 48 && code <= 57)
+        || (code >= 65 && code <= 90)
+        || (code >= 97 && code <= 122);
+    }
+
     function remove(text, from, to) {
       if(text.length <= 1 || text.length <= to - from) {
         return '';
@@ -467,17 +541,14 @@ var Josh = Josh || {};
       }
 
       // return as unhandled if we're not active or the key is just a modifier key
-      if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18) {
+      if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18 || e.keyCode == 91) {
         return true;
       }
 
       var handled = true;
 
-      // check keys special keys, regardless of modifiers
+      // check for some special keys, regardless of modifiers
       switch(e.keyCode) {
-        case 8:  // Backspace
-          queue(cmdBackspace);
-          break;
         case 9:  // Tab
           queue(cmdComplete);
           break;
@@ -532,9 +603,14 @@ var Josh = Josh || {};
       }
       if(!handled) {
 
-        // intercept ctrl- and alt- sequences
-        if(e.ctrlKey && !e.shiftKey && !e.altKey) {
+        // intercept ctrl- and meta- sequences
+        if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
           switch(e.keyCode) {
+            case 8:  // Backspace
+
+              // Backspace behaves the same with or without Ctrl, but different for meta
+              queue(cmdBackspace);
+              break;
             case 65: // A
               queue(cmdHome);
               handled = true;
@@ -576,7 +652,7 @@ var Josh = Josh || {};
               handled = true;
               break;
             case 76: // L
-              queue(cmdRefresh);
+              queue(cmdClear);
               handled = true;
               break;
             case 82: // R
@@ -584,15 +660,34 @@ var Josh = Josh || {};
               handled = true;
               break;
           }
-        } else if(e.altKey && !e.ctrlKey && !e.shiftKey) {
+        } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
           switch(e.keyCode) {
+            case 8:  // Backspace
+              queue(cmdKillWordBackward);
+              break;
             case 66: // B
               queue(cmdBackwardWord);
+              handled = true;
+              break;
+            case 68: // D
+              queue(cmdKillWordForward);
               handled = true;
               break;
             case 70: // F
               queue(cmdForwardWord);
               handled = true;
+              break;
+            case 89: // Y
+              queue(cmdRotate);
+              handled = true;
+              break;
+         }
+        } else {
+
+          // check for some more special keys without Ctrl or Alt
+          switch(e.keyCode) {
+            case 8:  // Backspace
+              queue(cmdBackspace);
               break;
           }
         }

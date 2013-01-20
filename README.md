@@ -9,6 +9,7 @@ http://sdether.github.com/josh.js/
 * `shell.js` - visual presentation of the shell and command handling
 * `pathhandler.js` - provide cd, ls, pwd and path completion toolikit
 * `history.js` - localStorage backed command history
+* `killring.js` - killring for kill & yank handling in readline
 
 ## License
 josh.js is licensed under the Apache 2.0 License
@@ -24,25 +25,82 @@ josh.js is licensed under the Apache 2.0 License
 * base shell UI should get some basic behaviors
   * `more`-like handling for output that exceeds the shell viewport size
   * resizing and close chrome
-  * scrollwheel support
-* Readline Issues/Omissions
-  * Not handling spaces in path completion
-  * Missing support for Alt-Backspace & Alt-D in readline.js
-  * ***Word***-commands do not have path separator awareness
+* Readline has not been tested with non-ascii.
+
 
 ## Usage
 
 Until documentation is written, refer to `index.html` and `example.js` for a sample implementation of a shell with path completion.
 
 ## Components
-***josh*** is built from 4 components and can be used in part or in full.
+***josh*** is built from 5 components and can be used in part or in full.
 
 ### readline.js
 
-`readline.js` has no dependencies on any outside libraries, although it requires either `history.js` or an object implementing the same calls.
+`readline.js` has no dependencies on any outside libraries, although it requires either `history.js` and `killring.js` or objects implementing the same calls.
 
 It implements key trapping to bring [GNU Readline](http://cnswww.cns.cwru.edu/php/chet/readline/readline.html) like line editing to the browser. It can be used by itself to bring readline support to custom data entry fields or in conjunction with `shell.js` to create a full console.
 
+#### Line Editing
+In the below `C-x` refers to the `Ctrl-x` keystroke, while `M-x` refers to the `Meta-x` which is mapped to `Alt`, `⌘` and `Left Windows`.
+
+<dl>
+<dt><em>Movement</em></dt>
+<dt><code>C-b</code> or <code>Left Arrow</code></dt>
+<dd>Move back one character</dd>
+<dt><code>M-b</code> or <code>Right Arrow</code></dt>
+<dd>Move back one word</dd>
+<dt><code>C-f</code></dt>
+<dd>Move forward one character</dd>
+<dt><code>M-f</code></dt>
+<dd>Move forward one word</dd>
+<dt><code>C-a</code> or <code>Home</code></dt>
+<dd>Move to the beginning of the line</dd>
+<dt><code>C-e</code> or <code>End</code></dt>
+<dd>Move to the end of the line</dd>
+
+<br/>
+<dt><em>Edit/Kill</em></dt>
+<dt><code>Backspace</code></dt>
+<dd>Delete one character back</dd>
+<dt><code>C-d</code> or <code>Delete</code></dt>
+<dd>Delete character under cursor</dd>
+<dt><code>C-k</code></dt>
+<dd><em>Kill</em> (i.e. put in kill ring) text to the end of the line</dd>
+<dt><code>M-Backspace</code></dt>
+<dd><em>Kill</em> one word back</dd>
+<dt><code>M-d</code></dt>
+<dd><em>Kill</em> word under cursor</dd>
+<dt><code>C-y</code></dt>
+<dd><em>Yank</em> (i.e. pull from kill ring) the most recently <em>killed</em> text</dd>
+<dt><code>M-y</code></dt>
+<dd>Rotate to the next item in killring and yank it. Must be preceded by <em>yank</em></dd>
+
+<br/>
+<dt><em>History</em></dt>
+<dt><code>C-r</code></dt>
+<dd>Reverse search through history</dd>
+<dt><code>C-p</code> or <code>Up Arrow</code></dt>
+<dd>Previous entry in history</dd>
+<dt><code>C-n</code> or <code>Down Arrow</code></dt>
+<dd>Next entry in history</dd>
+<dt><code>Page Up</code></dt>
+<dd>Top of history</dd>
+<dt><code>Page Down</code></dt>
+<dd>Bottom of history</dd>
+
+<br/>
+<dt><em>Misc</em></dt>
+<dt><code>C-l</code></dt>
+<dd>refresh line (clear screen in shell)</dd>
+<dt><code>Tab</code></dt>
+<dd>Invoke completion handler for text under cursor</dd>
+<dt><code>C-c</code> or <code>Esc</code></dt>
+<dd>Deactivate Readline (closes the shell)</dd>
+<dt><code>~</code></dt>
+<dd>Activate Readline (opens the shell)</dd>
+</dl>
+  
 ### shell.js
 `shell.js` has external dependencies of [jQuery](http://jquery.com/), [Underscore](http://underscorejs.org/) and internal dependencies of `readline.js` and `history.js`.
 
@@ -60,6 +118,9 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ### history.js
 `history.js` implements a localStorage back command history storage that persists over page changes and reloads. It is used by the `shell.js` history command to list all executed commands, and by `readline.js` for up/down arrow and reverse search capabilities.
+
+### killring.js
+`killing.js` implements the kill and yank behavior as well as state tracking, i.e. multiple consecutive kills are combined as a single kill and killring rotation tracks the previous yank, so that the `readline.js` can remove the previous yank and replace it with the rotated text.
 
 ## Changelog
 
