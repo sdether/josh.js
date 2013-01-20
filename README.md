@@ -27,7 +27,6 @@ josh.js is licensed under the Apache 2.0 License
   * resizing and close chrome
 * Readline has not been tested with non-ascii.
 
-
 ## Usage
 
 Until documentation is written, refer to `index.html` and `example.js` for a sample implementation of a shell with path completion.
@@ -123,6 +122,10 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 `killing.js` implements the kill and yank behavior as well as state tracking, i.e. multiple consecutive kills are combined as a single kill and killring rotation tracks the previous yank, so that the `readline.js` can remove the previous yank and replace it with the rotated text.
 
 ## Changelog
+
+**0.2.5** -- 2013/01/14
+* Implemented missing Readline behavior (see: [Issue 1](https://github.com/sdether/josh.js/issues/1)
+* Added scrollbar to sample implemenation (also adds scrollwheel support)
 
 **0.2.4** -- 2013/01/14
 * fixed path completion handling for scenarios of two possible completions where one is the root of the other
