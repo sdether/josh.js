@@ -15,6 +15,7 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
+Josh.Version = "0.2.5";
 (function(root) {
   var SPECIAL = {
     8: 'BACKSPACE',
@@ -45,7 +46,6 @@ var Josh = Josh || {};
       }
     });
     var _history = config.history || new Josh.History();
-    var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true }; // ~
     var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
     var _killring = config.killring || new Josh.KillRing();
     var _active = false;
@@ -53,7 +53,6 @@ var Josh = Josh || {};
     var _onDeactivate;
     var _onCompletion;
     var _onEnter;
-    var _onKeydown;
     var _onChange;
     var _onCancel;
     var _onEOT;
@@ -73,6 +72,9 @@ var Josh = Josh || {};
 
     // public methods
     var self = {
+      isActive: function() {
+        return _active;
+      },
       activate: function() {
         _active = true;
         if(_onActivate) {
@@ -90,9 +92,6 @@ var Josh = Josh || {};
       },
       onDeactivate: function(completionHandler) {
         _onDeactivate = completionHandler;
-      },
-      onKeydown: function(keydownHandler) {
-        _onKeydown = keydownHandler;
       },
       onChange: function(changeHandler) {
         _onChange = changeHandler;
@@ -155,7 +154,7 @@ var Josh = Josh || {};
       _console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
       if(_inSearch && cmd.name != "cmdKeyPress" && cmd.name != "cmdReverseSearch") {
         _inSearch = false;
-        if(cmd.name == 'cmdCancelSearch') {
+        if(cmd.name == 'cmdEsc') {
           _searchMatch = null;
         }
         if(_searchMatch) {
@@ -192,8 +191,8 @@ var Josh = Josh || {};
       resume();
     }
 
-    function cmdCancelSearch() {
-      // do nothing.. action for this was already taken in call()
+    function cmdEsc() {
+      // no-op, only has an effect on reverse search and that action was taken in call()
     }
 
     function cmdBackspace() {
@@ -333,10 +332,7 @@ var Josh = Josh || {};
 
     function cmdKillWordForward() {
       if(_text.length == 0) {
-        if(_onEOT) {
-          _onEOT();
-          return;
-        }
+        return;
       }
       if(_cursor == _text.length) {
         return;
@@ -451,13 +447,6 @@ var Josh = Josh || {};
       updateCursor(_text.length);
     }
 
-    function checkKeyMatch(a, b) {
-      return a.keyCode == b.keyCode
-        && Boolean(a.shiftKey) == Boolean(b.shiftKey)
-        && Boolean(a.ctrlKey) == Boolean(b.ctrlKey)
-        && Boolean(a.altKey) == Boolean(b.altKey);
-    }
-
     function findBeginningOfPreviousWord() {
       var position = _cursor - 1;
       if(position < 0) {
@@ -534,12 +523,6 @@ var Josh = Josh || {};
     root.onkeydown = function(e) {
       e = e || window.event;
 
-      // check if the keypress is an the activation key
-      if(!_active && checkKeyMatch(e, _activationKey)) {
-        self.activate();
-        return false;
-      }
-
       // return as unhandled if we're not active or the key is just a modifier key
       if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18 || e.keyCode == 91) {
         return true;
@@ -556,11 +539,7 @@ var Josh = Josh || {};
           queue(cmdDone);
           break;
         case 27: // Esc
-          if(_inSearch) {
-            queue(cmdCancelSearch);
-          } else {
-            handled = false;
-          }
+          queue(cmdEsc);
           break;
         case 33: // Page Up
           queue(cmdHistoryTop);
@@ -681,7 +660,7 @@ var Josh = Josh || {};
               queue(cmdRotate);
               handled = true;
               break;
-         }
+          }
         } else {
 
           // check for some more special keys without Ctrl or Alt
@@ -693,22 +672,7 @@ var Josh = Josh || {};
         }
       }
       if(!handled) {
-        if(!checkKeyMatch(e, _deactivationKey)) {
-          return true;
-        }
-        self.deactivate();
-      } else {
-        var info = getKeyInfo(e);
-        if(_onKeydown) {
-          _onKeydown({
-            code: e.keyCode,
-            shift: e.shiftKey,
-            control: e.controlKey,
-            alt: e.altKey,
-            name: SPECIAL[e.keyCode],
-            isChar: false
-          });
-        }
+        return true;
       }
       e.preventDefault();
       e.stopPropagation();
@@ -728,9 +692,6 @@ var Josh = Josh || {};
           addSearchText(key.character);
         } else {
           addText(key.character);
-        }
-        if(_onKeydown) {
-          _onKeydown(key);
         }
       });
       e.preventDefault();

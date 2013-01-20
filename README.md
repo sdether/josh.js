@@ -94,10 +94,12 @@ In the below `C-x` refers to the `Ctrl-x` keystroke, while `M-x` refers to the `
 <dd>refresh line (clear screen in shell)</dd>
 <dt><code>Tab</code></dt>
 <dd>Invoke completion handler for text under cursor</dd>
-<dt><code>C-c</code> or <code>Esc</code></dt>
-<dd>Deactivate Readline (closes the shell)</dd>
-<dt><code>~</code></dt>
-<dd>Activate Readline (opens the shell)</dd>
+<dt><code>Esc</code> in reverse search</dt>
+<dd>Cancel search</dd>
+<dt><code>C-c</code></dt>
+<dd>call <code>onCancel</code> handler</dd>
+<dt><code>C-d</code> on empty line</dt>
+<dd>call <code>onCancel</code> handler</dd>
 </dl>
   
 ### shell.js

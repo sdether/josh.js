@@ -166,24 +166,37 @@
     };
 
     $(document).ready(function() {
-      var consolePanel = $('#shell-panel');
-
+      $(document).keypress(function(event) {
+        if(shell.isActive()) {
+          return;
+        }
+        _console.log("activating shell");
+        if(event.keyCode == 126) {
+          event.preventDefault();
+          shell.activate();
+          showConsole();
+        }
+      });
+      var $consolePanel = $('#shell-panel');
+      $consolePanel.resizable({ handles: "s"});
       function showConsole() {
-        consolePanel.slideDown();
-        consolePanel.focus();
+        $consolePanel.slideDown();
+        $consolePanel.focus();
       }
 
       function hideConsole() {
-        consolePanel.slideUp();
-        consolePanel.blur();
+        $consolePanel.slideUp();
+        $consolePanel.blur();
       }
 
-      shell.onActivate(function() {
-        showConsole();
-      });
-      shell.onDeactivate(function() {
+      function hideAndDeactivate() {
+        _console.log("deactivating shell")
+        shell.deactivate();
         hideConsole();
-      });
+      }
+
+      shell.onEOT(hideAndDeactivate);
+      shell.onCancel(hideAndDeactivate);
     });
     Josh.Instance = {
       Tree: root,
