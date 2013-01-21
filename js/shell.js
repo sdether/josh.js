@@ -97,6 +97,9 @@ var Josh = Josh || {};
     // public methods
     var self = {
       commands: commands,
+      isActive: function() {
+        return _readline.isActive();
+      },
       activate: function() {
         if($(_shell_view_id).length == 0) {
           _active = false;
@@ -121,6 +124,12 @@ var Josh = Josh || {};
           return;
         }
         self.refresh();
+      },
+      onEOT: function(completionHandler) {
+        _readline.onEOT(completionHandler);
+      },
+      onCancel: function(completionHandler) {
+        _readline.onCancel(completionHandler);
       },
       onInitialize: function(completionHandler) {
         _initializationHandler = completionHandler;
@@ -379,8 +388,6 @@ var Josh = Josh || {};
         return callback(match.completion);
       });
     });
-    _readline.onEOT(self.deactivate);
-    _readline.onCancel(self.deactivate);
     return self;
   }
 })(this, $, _);
