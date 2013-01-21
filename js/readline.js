@@ -15,7 +15,7 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
-Josh.Version = "0.2.5";
+Josh.Version = "0.2.6";
 (function(root) {
   var SPECIAL = {
     8: 'BACKSPACE',
@@ -191,6 +191,10 @@ Josh.Version = "0.2.5";
       resume();
     }
 
+    function cmdNoOp() {
+      // no-op, used for keys we capture and ignore
+    }
+
     function cmdEsc() {
       // no-op, only has an effect on reverse search and that action was taken in call()
     }
@@ -338,6 +342,9 @@ Josh.Version = "0.2.5";
         return;
       }
       var end = findEndOfCurrentWord();
+      if(end == _text.length - 1) {
+        return cmdKillToEOF();
+      }
       _killring.append(_text.substring(_cursor, end))
       _text = remove(_text, _cursor, end);
       refresh();
@@ -528,160 +535,131 @@ Josh.Version = "0.2.5";
         return true;
       }
 
-      var handled = true;
+      var cmd = null;
 
-      // check for some special keys, regardless of modifiers
+      // check for some special first keys, regardless of modifiers
       switch(e.keyCode) {
+        case 8:  // Backspace
+          cmd = cmdBackspace;
+          break;
         case 9:  // Tab
-          queue(cmdComplete);
+          cmd = cmdComplete;
           break;
         case 13: // Enter
-          queue(cmdDone);
+          cmd = cmdDone;
           break;
         case 27: // Esc
-          queue(cmdEsc);
+          cmd = cmdEsc;
           break;
         case 33: // Page Up
-          queue(cmdHistoryTop);
+          cmd = cmdHistoryTop;
           break;
         case 34: // Page Down
-          queue(cmdHistoryEnd);
+          cmd = cmdHistoryEnd;
           break;
         case 35: // End
-          queue(cmdEnd);
+          cmd = cmdEnd;
           break;
         case 36: // Home
-          queue(cmdHome);
+          cmd = cmdHome;
           break;
         case 37: // Left
-          queue(cmdLeft);
+          cmd = cmdLeft;
           break;
         case 38: // Up
-          queue(cmdHistoryPrev);
+          cmd = cmdHistoryPrev;
           break;
         case 39: // Right
-          queue(cmdRight);
+          cmd = cmdRight;
           break;
         case 40: // Down
-          queue(cmdHistoryNext);
+          cmd = cmdHistoryNext;
           break;
         case 46: // Delete
-          queue(cmdDeleteChar);
+          cmd = cmdDeleteChar;
           break;
 
         // these we catch and have no commands for
         case 10: // Pause
         case 19: // Caps Lock
         case 45: // Insert
+          cmd = cmdNoOp;
           break;
 
         // all others we don't handle at this level
         default:
-          handled = false;
           break;
       }
-      if(!handled) {
 
-        // intercept ctrl- and meta- sequences
-        if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-          switch(e.keyCode) {
-            case 8:  // Backspace
-
-              // Backspace behaves the same with or without Ctrl, but different for meta
-              queue(cmdBackspace);
-              handled = true;
-              break;
-            case 65: // A
-              queue(cmdHome);
-              handled = true;
-              break;
-            case 66: // B
-              queue(cmdLeft);
-              handled = true;
-              break;
-            case 67: // C
-              queue(cmdCancel);
-              handled = true;
-              break;
-            case 68: // D
-              queue(cmdDeleteChar);
-              handled = true;
-              break;
-            case 69: // E
-              queue(cmdEnd);
-              handled = true;
-              break;
-            case 70: // F
-              queue(cmdRight);
-              handled = true;
-              break;
-            case 80: // P
-              queue(cmdHistoryPrev);
-              handled = true;
-              break;
-            case 78: // N
-              queue(cmdHistoryNext);
-              handled = true;
-              break;
-            case 75: // K
-              queue(cmdKillToEOF);
-              handled = true;
-              break;
-            case 89: // Y
-              queue(cmdYank);
-              handled = true;
-              break;
-            case 76: // L
-              queue(cmdClear);
-              handled = true;
-              break;
-            case 82: // R
-              queue(cmdReverseSearch);
-              handled = true;
-              break;
-          }
-        } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
-          switch(e.keyCode) {
-            case 8:  // Backspace
-              queue(cmdKillWordBackward);
-              handled = true;
-              break;
-            case 66: // B
-              queue(cmdBackwardWord);
-              handled = true;
-              break;
-            case 68: // D
-              queue(cmdKillWordForward);
-              handled = true;
-              break;
-            case 70: // F
-              queue(cmdForwardWord);
-              handled = true;
-              break;
-            case 89: // Y
-              queue(cmdRotate);
-              handled = true;
-              break;
-          }
-        } else {
-
-          // check for some more special keys without Ctrl or Alt
-          switch(e.keyCode) {
-            case 8:  // Backspace
-              queue(cmdBackspace);
-              handled = true;
-              break;
-          }
+      // intercept ctrl- and meta- sequences (may override the non-modifier cmd captured above
+      if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+        switch(e.keyCode) {
+          case 65: // A
+            cmd = cmdHome;
+            break;
+          case 66: // B
+            cmd = cmdLeft;
+            break;
+          case 67: // C
+            cmd = cmdCancel;
+            break;
+          case 68: // D
+            cmd = cmdDeleteChar;
+            break;
+          case 69: // E
+            cmd = cmdEnd;
+            break;
+          case 70: // F
+            cmd = cmdRight;
+            break;
+          case 80: // P
+            cmd = cmdHistoryPrev;
+            break;
+          case 78: // N
+            cmd = cmdHistoryNext;
+            break;
+          case 75: // K
+            cmd = cmdKillToEOF;
+            break;
+          case 89: // Y
+            cmd = cmdYank;
+            break;
+          case 76: // L
+            cmd = cmdClear;
+            break;
+          case 82: // R
+            cmd = cmdReverseSearch;
+            break;
+        }
+      } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
+        switch(e.keyCode) {
+          case 8:  // Backspace
+            cmd = cmdKillWordBackward;
+            break;
+          case 66: // B
+            cmd = cmdBackwardWord;
+            break;
+          case 68: // D
+            cmd = cmdKillWordForward;
+            break;
+          case 70: // F
+            cmd = cmdForwardWord;
+            break;
+          case 89: // Y
+            cmd = cmdRotate;
+            break;
         }
       }
-      if(!handled) {
+      if(!cmd) {
         return true;
       }
+      queue(cmd);
       e.preventDefault();
       e.stopPropagation();
       e.cancelBubble = true;
       return false;
     };
+
     root.onkeypress = function(e) {
       if(!_active) {
         return true;

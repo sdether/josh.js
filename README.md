@@ -125,8 +125,14 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
+**0.2.6** --
+* Removed Activation/Deactivation keybindings from Readline, making it an outside concern (see: [Issue 2](https://github.com/sdether/josh.js/issues/2 )
+* Fixed Backspace regression introduced by 0.2.5
+* Fixed `M-d` not deleting last character of line
+* Example shell can now be resized (via jquery-ui.resizable)
+
 **0.2.5** -- 2013/01/14
-* Implemented missing Readline behavior (see: [Issue 1](https://github.com/sdether/josh.js/issues/1)
+* Implemented missing Readline behavior (see: [Issue 1](https://github.com/sdether/josh.js/issues/1 )
 * Added scrollbar to sample implemenation (also adds scrollwheel support)
 
 **0.2.4** -- 2013/01/14
