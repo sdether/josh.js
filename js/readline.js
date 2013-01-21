@@ -589,6 +589,7 @@ Josh.Version = "0.2.5";
 
               // Backspace behaves the same with or without Ctrl, but different for meta
               queue(cmdBackspace);
+              handled = true;
               break;
             case 65: // A
               queue(cmdHome);
@@ -643,6 +644,7 @@ Josh.Version = "0.2.5";
           switch(e.keyCode) {
             case 8:  // Backspace
               queue(cmdKillWordBackward);
+              handled = true;
               break;
             case 66: // B
               queue(cmdBackwardWord);
@@ -667,6 +669,7 @@ Josh.Version = "0.2.5";
           switch(e.keyCode) {
             case 8:  // Backspace
               queue(cmdBackspace);
+              handled = true;
               break;
           }
         }
