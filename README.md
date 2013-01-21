@@ -125,7 +125,7 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
-**0.2.6** --
+**0.2.6** -- 2013/01/21
 * Removed Activation/Deactivation keybindings from Readline, making it an outside concern (see: [Issue 2](https://github.com/sdether/josh.js/issues/2 )
 * Fixed Backspace regression introduced by 0.2.5
 * Fixed `M-d` not deleting last character of line
