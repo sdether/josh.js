@@ -15,6 +15,7 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
+Josh.Version = "0.2.6";
 (function(root) {
   var SPECIAL = {
     8: 'BACKSPACE',
@@ -45,7 +46,6 @@ var Josh = Josh || {};
       }
     });
     var _history = config.history || new Josh.History();
-    var _activationKey = config.activationKey || { keyCode: 192, shiftKey: true }; // ~
     var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
     var _killring = config.killring || new Josh.KillRing();
     var _active = false;
@@ -53,7 +53,6 @@ var Josh = Josh || {};
     var _onDeactivate;
     var _onCompletion;
     var _onEnter;
-    var _onKeydown;
     var _onChange;
     var _onCancel;
     var _onEOT;
@@ -73,6 +72,9 @@ var Josh = Josh || {};
 
     // public methods
     var self = {
+      isActive: function() {
+        return _active;
+      },
       activate: function() {
         _active = true;
         if(_onActivate) {
@@ -90,9 +92,6 @@ var Josh = Josh || {};
       },
       onDeactivate: function(completionHandler) {
         _onDeactivate = completionHandler;
-      },
-      onKeydown: function(keydownHandler) {
-        _onKeydown = keydownHandler;
       },
       onChange: function(changeHandler) {
         _onChange = changeHandler;
@@ -155,7 +154,7 @@ var Josh = Josh || {};
       _console.log('calling: ' + cmd.name + ', previous: ' + _lastCmd);
       if(_inSearch && cmd.name != "cmdKeyPress" && cmd.name != "cmdReverseSearch") {
         _inSearch = false;
-        if(cmd.name == 'cmdCancelSearch') {
+        if(cmd.name == 'cmdEsc') {
           _searchMatch = null;
         }
         if(_searchMatch) {
@@ -192,8 +191,12 @@ var Josh = Josh || {};
       resume();
     }
 
-    function cmdCancelSearch() {
-      // do nothing.. action for this was already taken in call()
+    function cmdNoOp() {
+      // no-op, used for keys we capture and ignore
+    }
+
+    function cmdEsc() {
+      // no-op, only has an effect on reverse search and that action was taken in call()
     }
 
     function cmdBackspace() {
@@ -333,15 +336,15 @@ var Josh = Josh || {};
 
     function cmdKillWordForward() {
       if(_text.length == 0) {
-        if(_onEOT) {
-          _onEOT();
-          return;
-        }
+        return;
       }
       if(_cursor == _text.length) {
         return;
       }
       var end = findEndOfCurrentWord();
+      if(end == _text.length - 1) {
+        return cmdKillToEOF();
+      }
       _killring.append(_text.substring(_cursor, end))
       _text = remove(_text, _cursor, end);
       refresh();
@@ -451,13 +454,6 @@ var Josh = Josh || {};
       updateCursor(_text.length);
     }
 
-    function checkKeyMatch(a, b) {
-      return a.keyCode == b.keyCode
-        && Boolean(a.shiftKey) == Boolean(b.shiftKey)
-        && Boolean(a.ctrlKey) == Boolean(b.ctrlKey)
-        && Boolean(a.altKey) == Boolean(b.altKey);
-    }
-
     function findBeginningOfPreviousWord() {
       var position = _cursor - 1;
       if(position < 0) {
@@ -534,187 +530,136 @@ var Josh = Josh || {};
     root.onkeydown = function(e) {
       e = e || window.event;
 
-      // check if the keypress is an the activation key
-      if(!_active && checkKeyMatch(e, _activationKey)) {
-        self.activate();
-        return false;
-      }
-
       // return as unhandled if we're not active or the key is just a modifier key
       if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18 || e.keyCode == 91) {
         return true;
       }
 
-      var handled = true;
+      var cmd = null;
 
-      // check for some special keys, regardless of modifiers
+      // check for some special first keys, regardless of modifiers
       switch(e.keyCode) {
+        case 8:  // Backspace
+          cmd = cmdBackspace;
+          break;
         case 9:  // Tab
-          queue(cmdComplete);
+          cmd = cmdComplete;
           break;
         case 13: // Enter
-          queue(cmdDone);
+          cmd = cmdDone;
           break;
         case 27: // Esc
-          if(_inSearch) {
-            queue(cmdCancelSearch);
-          } else {
-            handled = false;
-          }
+          cmd = cmdEsc;
           break;
         case 33: // Page Up
-          queue(cmdHistoryTop);
+          cmd = cmdHistoryTop;
           break;
         case 34: // Page Down
-          queue(cmdHistoryEnd);
+          cmd = cmdHistoryEnd;
           break;
         case 35: // End
-          queue(cmdEnd);
+          cmd = cmdEnd;
           break;
         case 36: // Home
-          queue(cmdHome);
+          cmd = cmdHome;
           break;
         case 37: // Left
-          queue(cmdLeft);
+          cmd = cmdLeft;
           break;
         case 38: // Up
-          queue(cmdHistoryPrev);
+          cmd = cmdHistoryPrev;
           break;
         case 39: // Right
-          queue(cmdRight);
+          cmd = cmdRight;
           break;
         case 40: // Down
-          queue(cmdHistoryNext);
+          cmd = cmdHistoryNext;
           break;
         case 46: // Delete
-          queue(cmdDeleteChar);
+          cmd = cmdDeleteChar;
           break;
 
         // these we catch and have no commands for
         case 10: // Pause
         case 19: // Caps Lock
         case 45: // Insert
+          cmd = cmdNoOp;
           break;
 
         // all others we don't handle at this level
         default:
-          handled = false;
           break;
       }
-      if(!handled) {
 
-        // intercept ctrl- and meta- sequences
-        if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-          switch(e.keyCode) {
-            case 8:  // Backspace
-
-              // Backspace behaves the same with or without Ctrl, but different for meta
-              queue(cmdBackspace);
-              break;
-            case 65: // A
-              queue(cmdHome);
-              handled = true;
-              break;
-            case 66: // B
-              queue(cmdLeft);
-              handled = true;
-              break;
-            case 67: // C
-              queue(cmdCancel);
-              handled = true;
-              break;
-            case 68: // D
-              queue(cmdDeleteChar);
-              handled = true;
-              break;
-            case 69: // E
-              queue(cmdEnd);
-              handled = true;
-              break;
-            case 70: // F
-              queue(cmdRight);
-              handled = true;
-              break;
-            case 80: // P
-              queue(cmdHistoryPrev);
-              handled = true;
-              break;
-            case 78: // N
-              queue(cmdHistoryNext);
-              handled = true;
-              break;
-            case 75: // K
-              queue(cmdKillToEOF);
-              handled = true;
-              break;
-            case 89: // Y
-              queue(cmdYank);
-              handled = true;
-              break;
-            case 76: // L
-              queue(cmdClear);
-              handled = true;
-              break;
-            case 82: // R
-              queue(cmdReverseSearch);
-              handled = true;
-              break;
-          }
-        } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
-          switch(e.keyCode) {
-            case 8:  // Backspace
-              queue(cmdKillWordBackward);
-              break;
-            case 66: // B
-              queue(cmdBackwardWord);
-              handled = true;
-              break;
-            case 68: // D
-              queue(cmdKillWordForward);
-              handled = true;
-              break;
-            case 70: // F
-              queue(cmdForwardWord);
-              handled = true;
-              break;
-            case 89: // Y
-              queue(cmdRotate);
-              handled = true;
-              break;
-         }
-        } else {
-
-          // check for some more special keys without Ctrl or Alt
-          switch(e.keyCode) {
-            case 8:  // Backspace
-              queue(cmdBackspace);
-              break;
-          }
+      // intercept ctrl- and meta- sequences (may override the non-modifier cmd captured above
+      if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+        switch(e.keyCode) {
+          case 65: // A
+            cmd = cmdHome;
+            break;
+          case 66: // B
+            cmd = cmdLeft;
+            break;
+          case 67: // C
+            cmd = cmdCancel;
+            break;
+          case 68: // D
+            cmd = cmdDeleteChar;
+            break;
+          case 69: // E
+            cmd = cmdEnd;
+            break;
+          case 70: // F
+            cmd = cmdRight;
+            break;
+          case 80: // P
+            cmd = cmdHistoryPrev;
+            break;
+          case 78: // N
+            cmd = cmdHistoryNext;
+            break;
+          case 75: // K
+            cmd = cmdKillToEOF;
+            break;
+          case 89: // Y
+            cmd = cmdYank;
+            break;
+          case 76: // L
+            cmd = cmdClear;
+            break;
+          case 82: // R
+            cmd = cmdReverseSearch;
+            break;
+        }
+      } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
+        switch(e.keyCode) {
+          case 8:  // Backspace
+            cmd = cmdKillWordBackward;
+            break;
+          case 66: // B
+            cmd = cmdBackwardWord;
+            break;
+          case 68: // D
+            cmd = cmdKillWordForward;
+            break;
+          case 70: // F
+            cmd = cmdForwardWord;
+            break;
+          case 89: // Y
+            cmd = cmdRotate;
+            break;
         }
       }
-      if(!handled) {
-        if(!checkKeyMatch(e, _deactivationKey)) {
-          return true;
-        }
-        self.deactivate();
-      } else {
-        var info = getKeyInfo(e);
-        if(_onKeydown) {
-          _onKeydown({
-            code: e.keyCode,
-            shift: e.shiftKey,
-            control: e.controlKey,
-            alt: e.altKey,
-            name: SPECIAL[e.keyCode],
-            isChar: false
-          });
-        }
+      if(!cmd) {
+        return true;
       }
+      queue(cmd);
       e.preventDefault();
       e.stopPropagation();
       e.cancelBubble = true;
       return false;
     };
+
     root.onkeypress = function(e) {
       if(!_active) {
         return true;
@@ -728,9 +673,6 @@ var Josh = Josh || {};
           addSearchText(key.character);
         } else {
           addText(key.character);
-        }
-        if(_onKeydown) {
-          _onKeydown(key);
         }
       });
       e.preventDefault();
