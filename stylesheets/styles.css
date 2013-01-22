@@ -625,7 +625,10 @@ blockquote {
 code {
   font-family: 'Source Code Pro', "Lucida Sans", Monaco, Bitstream Vera Sans Mono, Lucida Console, Terminal;
   color: #efefef;
-  -moz-border-radius: 2px;
+  border: 1px solid #3a3a39;
+  background-color: #2a2a29;
+  border-radius: 5px;  -moz-border-radius: 4px;
+  padding: 0px 2px;
   -webkit-border-radius: 2px;
   -o-border-radius: 2px;
   -ms-border-radius: 2px;
