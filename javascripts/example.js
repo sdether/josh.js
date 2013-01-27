@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *-------------------------------------------------------------------------*/
-
-//    Josh.js 0.2.7 Sample Usage
-//    http://sdether.github.com/josh.js/
-//    Copyright 2013 Arne F. Claassen
-//    Josh.js is distributed under the Apache 2.0 license
 (function(root, $, _) {
   Josh.Example = (function(root, $, _) {
 
@@ -46,7 +41,7 @@
     var shell = Josh.Shell({readline: readline, history: history, console: _console});
 
 
-    // Create `killring` command
+    // Create *killring* command
     // -------------------------
 
     // Setup the `Underscore` template for displaying items in the `KillRing`.
@@ -85,10 +80,10 @@
 
     // `PathHandler` operates on path nodes which are expected to be objects with the minimum structure of
     //
-    //    {
-    //      name: 'localname',
-    //      path: '/full/path/to/localname'
-    //    }
+    //     {
+    //       name: 'localname',
+    //       path: '/full/path/to/localname'
+    //     }
     //
     // where name is the `name` of the node and `path` is the absolute path to the node. PathHandler does not modify
     // these nodes, so any additional state your implementation requires can be attached to the nodes and be relied on
@@ -134,7 +129,7 @@
         return callback(current);
       }
       if(parts[0] == ".") {
-        // carry on
+
       } else if(parts[0] == "..") {
         current = current.parent;
       } else {
