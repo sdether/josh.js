@@ -29,7 +29,7 @@ josh.js is licensed under the Apache 2.0 License
 
 ## Usage
 
-Until documentation is written, refer to `index.html` and `example.js` for a sample implementation of a shell with path completion.
+Until documentation is written, refer to `index.html` and `example.js` ([Annotateed Source](http://sdether.github.com/josh.js/docs/example.html)) for a sample implementation of a shell with path completion.
 
 ## Components
 ***josh*** is built from 5 components and can be used in part or in full.
