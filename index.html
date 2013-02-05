@@ -28,31 +28,19 @@
     <script src="javascripts/example.js"></script>
     <style type="text/css">
         #shell-panel {
-            display: none;
-            height: 400px;
-            width: 97.0%;
-            opacity: 0.9;
+            height: 200px;
+            width: 100%;
             background-color: #002f05;
             color: #00fe00;
-            position: fixed;
             padding: 20px 20px 20px 20px;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            font-family: 'Source Code Pro', sans-serif;
-            font-size: 0.9em;
+            font-family: 'Source Code Pro';
             overflow: scroll;
             overflow-x: hidden;
             overflow-y: scroll;
+            border: 1px dashed #E6EBE0;
         }</style>
 </head>
 <body>
-<div id="shell-panel">
-    <div>Type <code>help</code> or hit <code>TAB</code> for a list of commands. Hit
-        <code>Ctrl-C</code> to hide the shell
-    </div>
-    <div id="shell-view"></div>
-</div>
 <div id="header">
     <nav>
         <li class="fork"><a href="https://github.com/sdether/josh.js">View On GitHub</a></li>
@@ -89,7 +77,7 @@
         <code>shell.js</code> - visual presentation of the shell and command handling
     </li>
     <li>
-        <code>pathhandler.js</code> - provide cd, ls, pwd and path completion toolikit
+        <code>pathhandler.js</code> - provide cd, ls, pwd and path completion toolkit
     </li>
     <li>
         <code>history.js</code> - localStorage backed command history
@@ -100,8 +88,14 @@
 </ul>
 
 <h2>Live Demo</h2>
+Drag bottom of shell to change size.
+<div id="shell-panel">
+    <div>Type <code>help</code> or hit <code>TAB</code> for a list of commands.
+    </div>
+    <div id="shell-view"></div>
+</div>
 
-<p id="demo"><em>Hit the <span style="color: #ffcc00; font-weight: bold; font-size: 1.2em">~</span> key to show a demo console ( <a href="docs/example.html">Annotated source of demo</a>)</em></p>
+<p><em><a href="docs/example.html">Annotated source of demo</a></em></p>
 
 <h2>Tutorials</h2>
 <ul>
@@ -125,15 +119,7 @@
     <li>needs minified versions of complete toolkit and just readline.js</li>
     <li>needs code documentation and documentation site</li>
     <li>would like to add AMD support</li>
-    <li>base shell UI should get some basic behaviors
-
-        <ul>
-            <li>
-                <code>more</code>-like handling for output that exceeds the shell viewport size
-            </li>
-            <li>resizing and close chrome</li>
-        </ul>
-    </li>
+    <li>implement <em>NCurses</em> for better UI control</li>
     <li>Readline has not been tested with non-ascii.</li>
 </ul>
 <h2>
@@ -268,9 +254,9 @@
     <code>shell.js</code> provides the following commands:</p>
 
 <ul>
-    <li>help - list all known commands (including user added)</li>
-    <li>clear - clear the "screen" i.e. viewport</li>
-    <li>history - show the command history captured by <code>readline.js</code> in <code>history.js</code>
+    <li><code>help</code> - list all known commands (including user added)</li>
+    <li><code>clear</code> - clear the "screen" i.e. viewport</li>
+    <li><code>history</code> - show the command history captured by <code>readline.js</code> in <code>history.js</code>
     </li>
 </ul>
 <h3>

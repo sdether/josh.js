@@ -150,44 +150,16 @@
     $(document).ready(function() {
 
       // The default name for the div the shell uses as its container is `shell-panel`, although that can be changed via
-      // the shell config parameter `shell-view-id`. The `Shell` display model relies on a div to contain a 'view'. The
-      // acts as the view-port, i.e. the visible portion of the shell content, while the view is appended to and
-      // scrolled up as new content is added.
+      // the shell config parameter `shell-panel-id`. The `Shell` display model relies on a 'panel' to contain a 'view'.
+      // The 'panel' acts as the view-port, i.e. the visible portion of the shell content, while the 'view' is appended
+      // to and scrolled up as new content is added.
       var $consolePanel = $('#shell-panel');
 
       // We use **jquery-ui**'s `resizable` to let us drag the bottom edge of the console up and down.
       $consolePanel.resizable({ handles: "s"});
 
-      // Wire up a the keypress handler. This will be used only for shell activation.
-      $(document).keypress(function(event) {
-
-        // If the shell is already active drop out of the keyhandler, since all keyhandling happens in `Readline`.
-        if(shell.isActive()) {
-          return;
-        }
-
-        // Mimicking *Quake*-style dropdown consoles, we activate and show on `~`.
-        _console.log("activating shell");
-        if(event.keyCode == 126) {
-          event.preventDefault();
-          shell.activate();
-          $consolePanel.slideDown();
-          $consolePanel.focus();
-        }
-      });
-
-      // Whenever we get either a `EOT` (`Ctrl-D` on empty line) or a `Cancel` (`Ctrl-C`) signal from the shell,
-      // we deactivate the shell and hide the console.
-      function hideAndDeactivate() {
-        _console.log("deactivating shell");
-        shell.deactivate();
-        $consolePanel.slideUp();
-        $consolePanel.blur();
-      }
-
-      // Attach our hide function to the EOT and Cancel events.
-      shell.onEOT(hideAndDeactivate);
-      shell.onCancel(hideAndDeactivate);
+      // activate the shell
+      shell.activate();
     });
 
     // We attach the various objects we've created here to `Josh.Instance` purely so they can be inspected via a
