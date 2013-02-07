@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <title>Josh.js by sdether</title>
+  <link rel="stylesheet" href="stylesheets/styles.css">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script src="javascripts/respond.js"></script>
+  <!--[if lt IE 9]>
+  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 8]>
+  <link rel="stylesheet" href="stylesheets/ie.css">
+  <![endif]-->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+  <script>Josh = {Debug: true };</script>
+  <script src="javascripts/killring.js"></script>
+  <script src="javascripts/history.js"></script>
+  <script src="javascripts/readline.js"></script>
+  <script src="javascripts/shell.js"></script>
+  <script src="javascripts/pathhandler.js"></script>
+  <script src="javascripts/quakeconsole.js"></script>
+  <style type="text/css">
+    #shell-panel {
+      display: none;
+      height: 400px;
+      width: 97.0%;
+      opacity: 0.9;
+      background-color: #002f05;
+      color: #00fe00;
+      position: fixed;
+      padding: 20px 20px 20px 20px;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      font-family: 'Source Code Pro', sans-serif;
+      font-size: 0.9em;
+      overflow: scroll;
+      overflow-x: hidden;
+      overflow-y: scroll;
+    }</style>
+</head>
+<body>
+<div id="shell-panel">
+  <div>Type <code>help</code> or hit <code>TAB</code> for a list of commands. Press
+    <code>Ctrl-C</code> to hide the console.
+  </div>
+  <div id="shell-view"></div>
+</div>
+<div id="header">
+  <nav>
+    <li><a href="index.html">Back to the Documentation</a></li>
+  </nav>
+</div>
+<div class="wrapper">
+
+  <section>
+    <h1>Quake-style console with unix-style path handling</h1>
+
+    <p>This tutorial shows implements a quake-style shell that drops down over your current page. Inside the shell a fake filesystem illustrates how
+      <code>Pathhandler.js</code> can be used to provide standard unix commands ls, cd, pwd and filepath tab completion. Type <code>~</code> to activate the shell we will be building in this tutorial.
+    </p>
+
+    <h2>Hooking up PathHandler.js</h2>
+
+    <p><code>PathHandler</code> is a mix-in for <code>Josh.Shell</code> to provide provide the standard unix
+      <code>ls</code>, <code>pwd</code> and <code>cd</code> commands, as well
+      as standard <em>bash</em>-style path tab-completion. It expects a
+      <code>Josh.Shell</code> instance as its first argument so that it can
+      attach its command handlers to the shell as well as override the default handler to support completion of paths
+      starting with <code>.</code> or <code>/</code> without a leading command.</p>
+        <pre>var shell = Josh.Shell();
+var pathhandler = new Josh.PathHandler(shell);</pre>
+
+    <p><code>PathHandler</code> operates on path nodes which are expected to be objects with a minimum structure of:</p>
+
+    <pre>{
+    name: 'localname',
+    path: '/full/path/to/localname'
+}</pre>
+    <p>where <code>name</code> is the name of the node and
+      <code>path</code> is the absolute path to the node. It does not modify
+      these nodes, so any additional state your implementation requires can be attached to the nodes and be relied on
+      as being part of the node when <code>PathHandler</code> provides one to your handler as an argument.</p>
+
+    <p>The pathhandler expects to be initialized with the current <em>directory</em> in the form pf a path node. For this
+      example, we've build up a full tree of nodes providing a skeleton unix file system. Our nodes take the structure of:</p>
+    <pre>{
+    name: 'localname',
+    path: '/full/path/to/localname',
+    parent: {parent node},
+    children: [{child nodes}]
+}</pre>
+    <p>This allows the example to simply navigate up and down a tree from any node. The tree is built by the helper <code>builtTree()</code>
+    whose implementation is not of consequence to how <code>PathHandler</code> works and is therefore just assumed to exist, so that we can create
+    the tree and assign its root as <code>pathhandler.current</code>.</p>
+        <pre>var treeroot = buildTree();
+pathhandler.current = treeroot;</pre>
+
+    <h2>Implementing PathHandler's required methods</h2>
+    <p><code>PathHandler</code> requires two method, <code>getNode</code> and <code>getChildNodes</code>, to be provided in order to operate.</p>
+
+    <p><code>getNode</code> gets called with a <em>path</em> string. This string is completely opaque to <code>PathHandler</code>,
+      i.e. supporting constructs such as <code>.</code> and <code>..</code> are up to the implementor. <code>PathHandler</code>
+      calls <code>getNode</code> anytime it has a path and needs to determine what if any node exists at that path. Thish happens
+      during path completion as well as <code>cd</code> and <code>ls</code> execution. It simply provides the path and
+      expects its callback to be called with a pathnode for that path or null. The only assumption about paths that it does
+      have is that the path separator is <code>/</code>.</p>
+
+    <pre>pathhandler.getNode = function(path, callback) {
+  if(!path) {
+    return callback(pathhandler.current);
+  }
+  var parts = _.filter(path.split('/'), function(x) {
+    return x;
+  });
+  var start = ((path || '')[0] == '/') ? treeroot : pathhandler.current;
+  return findNode(start, parts, callback);
+};</pre>
+    <p>For this example, no path always means the current node, otherwise we split the path into its components and walk the tree
+    via a helper <code>findNode</code> from either the root or the current node depending on whether the path started with a <code>/</code>. <code>findNode</code> is specific to this implementation, since it can work on an in memory tree. In a service bound implementation the <code>findNode</code> logic would likely reside at the server and the callback called in the completion closure of an ajax call.</p>
+    <pre>function findNode(current, parts, callback) {
+  if(!parts || parts.length == 0) {
+    return callback(current);
+  }
+  if(parts[0] == ".") {
+
+  } else if(parts[0] == "..") {
+    current = current.parent;
+  } else {
+    current = _.first(_.filter(current.childnodes, function(node) {
+      return node.name == parts[0];
+    }));
+  }
+  if(!current) {
+    return callback();
+  }
+  return findNode(current, _.rest(parts), callback);
+}</pre>
+
+    <p>The second required method is <code>getChildNodes</code> and is used by path completion to determine the possible
+      completion candidates. Path completion first determines the nearest resolvable node for the given path. It does this
+      by first calling <code>getNode</code> on the current path and failing to get a node, looking for the nearest tail
+      <code>/</code> to find a parent and use the trailing characters as the partial path to be completed against children
+      found via <code>getChildNodes</code>. For our example, we've attached the child node objects directly to the pathnode
+      object, so we can simply return it. Usually this would be used to call the server with the provided node's path or id so that
+      the appropriate children could be retrieved.</p>
+
+    <pre>pathhandler.getChildNodes = function(node, callback) {
+  callback(node.childnodes);
+};</pre>
+
+    <h2>Setup Quake-console Behavior</h2>
+
+    <p>The default name for the div the shell uses as its container is <code>shell-panel</code>, although that can be changed via
+      the shell config parameter <code>shell-panel-id</code>. The <code>Josh.Shell</code> display model is based on a
+      <em>panel</em> that defines the viewport of the console <em>screen</em> while the content is appended to a
+      <em>view</em> that is contained inside the panel and continuously scrolled down. For the <em>quake</em>-style console,
+      we want the panel to take up the width of the browser and overlay the page's top portion. For this we add the panel
+      right after the <code>body</code> tag:</p>
+    <pre>&lt;div id=&quot;shell-panel&quot;&gt;
+  &lt;div&gt;Type &lt;code&gt;help&lt;/code&gt; or hit &lt;code&gt;TAB&lt;/code&gt; for a list of commands.
+    Press &lt;code&gt;Ctrl-C&lt;/code&gt; to hide the console.
+  &lt;/div&gt;
+  &lt;div id=&quot;shell-view&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;</pre>
+    <p>With css, we make sure this is initially invisible, is fixed in top position and has a high z-index so that it will
+    always be on top.</p>
+
+    <p>We use <strong>jquery-ui</strong>'s <code>resizable</code> so that the shell can be resized by dragging its bottom edge.</p>
+    <pre>var $consolePanel = $('#shell-panel');
+$consolePanel.resizable({ handles: "s"});</pre>
+
+    <p>Next, we wire up a the keypress handler for shell activation, since <code>Josh.ReadLine</code> does not listen to keys
+    until the shell is activated. This handler will only execute while the shell is inactive and trigger on <code>~</code>,
+    using <strong>jquery</strong> animaton to slide it down and give it focus.</p>
+    <pre>$(document).keypress(function(event) {
+  if(shell.isActive()) {
+    return;
+  }
+  if(event.keyCode == 126) {
+    event.preventDefault();
+    shell.activate();
+    $consolePanel.slideDown();
+    $consolePanel.focus();
+  }
+});</pre>
+
+    <p>Finally, we wire create a function to deactivate the shell, slide it back up and hide it and attach it to the shell's <code>EOT</code> (<code>Ctrl-D</code> on empty line) or a <code>Cancel</code> (<code>Ctrl-C</code>) signals:
+      we deactivate the shell and hide the console.</p>
+    <pre>function hideAndDeactivate() {
+  shell.deactivate();
+  $consolePanel.slideUp();
+  $consolePanel.blur();
+}
+shell.onEOT(hideAndDeactivate);
+shell.onCancel(hideAndDeactivate);</pre>
+  <p>Now the Shell is ready to be activated and it's faked unix file system browsed, all with minimal custom code.</p>
+  </section>
+</div>
+<!--[if !IE]>
+<script>fixScale(document);</script><![endif]-->
+
+</body>
+</html>
