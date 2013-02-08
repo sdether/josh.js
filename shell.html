@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <title>Josh.js by sdether</title>
+  <link rel="stylesheet" href="stylesheets/styles.css">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script src="javascripts/respond.js"></script>
+  <!--[if lt IE 9]>
+  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 8]>
+  <link rel="stylesheet" href="stylesheets/ie.css">
+  <![endif]-->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+</head>
+<body>
+<div id="header">
+  <nav>
+    <li><a href="index.html">Back to the Documentation</a></li>
+  </nav>
+</div>
+<div class="wrapper">
+
+  <section>
+    <h1>Josh.Shell</h1>
+
+    <p>It provides a simple console UI, using a <em>panel</em> for the console viewport and an auto-scrolling
+      <em>view</em> inside the panel. It uses Underscore templates for generating the view html, although any template generator can be substituted as long as it can be expressed in the form of a function that takes a JSON object of arguments and returns an html string.
+    </p>
+
+    <p>It also implements command handling so that new commands can be added by name with execution and completion handlers. Out of the box,
+      <code>shell.js</code> provides the following commands:</p>
+
+    <ul>
+      <li><code>help</code> - list all known commands (including user added)</li>
+      <li><code>clear</code> - clear the "screen" i.e. viewport</li>
+      <li><code>history</code> - show the command history captured by <code>readline.js</code> in <code>history.js</code>
+      </li>
+    </ul>
+
+    <h2>Functions</h2>
+
+    <h3>new Josh.Shell(config)</h3>
+    <h3>isActive()</h3>
+    <h3>activate()</h3>
+    <h3>deactivate()</h3>
+    <h3></h3>
+    <h3></h3>
+
+    <h2>Internal Dependencies</h2>
+    <h3>Josh.Readline</h3>
+    <h3>Josh.History</h3>
+
+    <h2>External Dependencies</h2>
+    <h3>jQuery</h3>
+    <h3>Underscore</h3>
+  </section>
+</div>
+<!--[if !IE]>
+<script>fixScale(document);</script><![endif]-->
+
+</body>
+</html>

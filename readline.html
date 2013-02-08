@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <title>Josh.js by sdether</title>
+  <link rel="stylesheet" href="stylesheets/styles.css">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script src="javascripts/respond.js"></script>
+  <!--[if lt IE 9]>
+  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 8]>
+  <link rel="stylesheet" href="stylesheets/ie.css">
+  <![endif]-->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+</head>
+<body>
+<div id="header">
+  <nav>
+    <li><a href="index.html">Back to the Documentation</a></li>
+  </nav>
+</div>
+<div class="wrapper">
+
+  <section>
+    <h1>Josh.Readline</h1>
+
+    <p><code>Josh.Readline</code> is the underlying plumbing responsible for all keystroke handling, bringing
+      <a href="http://cnswww.cns.cwru.edu/php/chet/readline/readline.html">GNU Readline</a> like line editing to the browser. It is used by
+      <code>Josh.Shell</code> to implement
+      <em>bash</em>-like command prompt behavior, but could easily be wired up to any text box requiring advanced key handling. It has no dependencies on any outside libraries, although it does require either
+      <code>Josh.History</code> and <code>Josh.Killring</code> or objects implementing the same calls.</p>
+
+    <h2>Functions</h2>
+    <p>When using <code>Josh.Shell</code> Readline is proxied for those calls that need to be exposed and otherwise invisible. The full API for readline is really only of interest for usage away from <code>Josh.Shell</code>.</p>
+
+    <h3>new Josh.Readline(config)</h3>
+    <h3>isActive()</h3>
+    <h3>activate()</h3>
+    <h3>deactivate()</h3>
+    <h3>getLine</h3>
+    <h3>onActivate(eventHandler)</h3>
+    <h3>onDeactivate</h3>
+    <h3>onChange</h3>
+    <h3>onClear</h3>
+    <h3>onEnter</h3>
+    <h3>onCompletion</h3>
+    <h3>onCancel</h3>
+    <h3>onEOT</h3>
+    <h3>onSearchStart</h3>
+    <h3>onSearchEnd</h3>
+    <h3>onSearchChange</h3>
+    <h3></h3>
+    <h3></h3>
+
+    <h2>Internal Dependencies</h2>
+    <h3>Josh.History</h3>
+    <h3>Josh.Killring</h3>
+
+    <h2>External Dependencies</h2>
+    <p><em>None</em></p>
+  </section>
+</div>
+<!--[if !IE]>
+<script>fixScale(document);</script><![endif]-->
+
+</body>
+</html>
