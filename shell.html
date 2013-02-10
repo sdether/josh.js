@@ -32,34 +32,71 @@
     <h1>Josh.Shell</h1>
 
     <p>It provides a simple console UI, using a <em>panel</em> for the console viewport and an auto-scrolling
-      <em>view</em> inside the panel. It uses Underscore templates for generating the view html, although any template generator can be substituted as long as it can be expressed in the form of a function that takes a JSON object of arguments and returns an html string.
+      <em>view</em> inside the panel. It uses Underscore templates for generating the view html, although any
+      template generator can be substituted as long as it can be expressed in the form of a function that takes a
+      JSON object of arguments and returns an html string.
     </p>
 
-    <p>It also implements command handling so that new commands can be added by name with execution and completion handlers. Out of the box,
+    <p>It also implements command handling so that new commands can be added by name with execution and completion
+      handlers. Out of the box,
       <code>shell.js</code> provides the following commands:</p>
 
     <ul>
       <li><code>help</code> - list all known commands (including user added)</li>
       <li><code>clear</code> - clear the "screen" i.e. viewport</li>
-      <li><code>history</code> - show the command history captured by <code>readline.js</code> in <code>history.js</code>
+      <li><code>history</code> - show the command history captured by <code>readline.js</code> in
+        <code>history.js</code>
       </li>
     </ul>
 
     <h2>Functions</h2>
 
     <h3>new Josh.Shell(config)</h3>
+
+    <h3>bestMatch(partial, possible)</h3>
+
+    <h3>commands()</h3>
+
     <h3>isActive()</h3>
+
     <h3>activate()</h3>
+
     <h3>deactivate()</h3>
-    <h3></h3>
-    <h3></h3>
+
+    <h3>render()</h3>
+
+    <h3>refresh()</h3>
+
+    <h3>scrollToBottom()</h3>
+
+    <h3>getCommandHandler(commandHandler)</h3>
+
+    <h3>setCommandHandler(cmdName,cmdHandler)</h3>
+
+    <h3>setPrompt(prompt)</h3>
+
+    <h3>onEOT(eventHandler)</h3>
+
+    <h3>onCancel(eventHandler)</h3>
+
+    <h3>onInitialize(eventHandler)</h3>
+
+    <h3>onActivate(eventHandler)</h3>
+
+    <h3>onDeactivate(eventHandler)</h3>
+
+    <h3>onNewPrompt(eventHandler)</h3>
 
     <h2>Internal Dependencies</h2>
+
     <h3>Josh.Readline</h3>
+
     <h3>Josh.History</h3>
 
     <h2>External Dependencies</h2>
+
     <h3>jQuery</h3>
+
     <h3>Underscore</h3>
   </section>
 </div>

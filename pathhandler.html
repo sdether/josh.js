@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <title>Josh.js by sdether</title>
+  <link rel="stylesheet" href="stylesheets/styles.css">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script src="javascripts/respond.js"></script>
+  <!--[if lt IE 9]>
+  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 8]>
+  <link rel="stylesheet" href="stylesheets/ie.css">
+  <![endif]-->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+</head>
+<body>
+<div id="header">
+  <nav>
+    <li><a href="index.html">Back to the Documentation</a></li>
+  </nav>
+</div>
+<div class="wrapper">
+
+  <section>
+    <h1>Josh.PathHandler</h1>
+    <p><code>pathhandler.js</code> is a mix in to easily add the <code>cd</code>, <code>ls</code> and
+    <code>pwd</code> commands as well as path completion. It has <a href="http://underscorejs.org/">Underscore</a> as its dependency for templating, however since all
+    templates it uses are exposed, they could easily be replaced with a different function that accepts an argument object returns html.</p>
+
+    <p>By implementing the functions <code>getNode</code> and
+      <code>getChildNodes</code>, this library adds path traversal, discovery and completion just like a bash shell.
+    </p>
+
+    <h2>Functions</h2>
+
+    <h3>new Josh.PathHandler(config)</h3>
+
+    <h3></h3>
+
+    <h2>Internal Dependencies</h2>
+
+    <h3>Josh.Shell</h3>
+
+    <h2>External Dependencies</h2>
+
+    <h3>Underscore</h3>
+  </section>
+</div>
+<!--[if !IE]>
+<script>fixScale(document);</script><![endif]-->
+
+</body>
+</html>

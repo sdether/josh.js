@@ -268,9 +268,8 @@ Drag bottom of shell to change size.
 </h3>
 
 <p><code>pathhandler.js</code> is a mix in to easily add the <code>cd</code>, <code>ls</code> and
-  <code>pwd</code> commands as well as path completion. It has the same external dependencies of
-  <a href="http://jquery.com/">jQuery</a>, <a href="http://underscorejs.org/">Underscore</a> as
-  <code>shell.js</code> and also uses Underscore templating.</p>
+  <code>pwd</code> commands as well as path completion. It has <a href="http://underscorejs.org/">Underscore</a> as its dependency for templating, however since all
+  templates it uses are exposed, they could easily be replaced with a different function that accepts an argument object returns html.</p>
 
 <p>By implementing the functions <code>getNode</code> and
   <code>getChildNodes</code>, this library adds path traversal, discovery and completion just like a bash shell.
