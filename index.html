@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>Shell testbed</title>
 
-    <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro:400normal,600normal' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
@@ -32,10 +32,88 @@
             z-index: 1000;
             font-family: 'Source Code Pro', sans-serif;
             font-size: 0.9em;
-            overflow:scroll;
-            overflow-x:hidden;
+            overflow: scroll;
+            overflow-x: hidden;
             overflow-y: scroll;
-        }</style>
+        }
+
+        .shell-unit {
+            position: absolute;
+            float: left;
+            white-space: pre;
+            visibility: hidden;
+            font-family: 'Source Code Pro' !important;
+            font-style: normal;
+            font-weight: 400;
+            height: auto;
+            width: auto;
+        }
+        .shell-line {
+            white-space: pre;
+        }
+        .shell-regular {
+            font-family: 'Source Code Pro' !important;
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        .shell-italic {
+            font-family: 'Source Code Pro' !important;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .shell-bold {
+            font-family: 'Source Code Pro' !important;
+            font-style: normal;
+            font-weight: 600;
+        }
+
+        .shell-bold-italic {
+            font-family: 'Source Code Pro' !important;
+            font-style: italic;
+            font-weight: 600;
+        }
+    </style>
+    <script>
+        TermInfo = {};
+        $(document).ready(function() {
+            var unit = $('<div>XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</div>')
+                    .addClass("shell-unit")
+                    .appendTo($('body'));
+            var terminal = $("#terminal");
+            TermInfo.Unit = { w: unit.width()/50, h: unit.height()};
+            TermInfo.Size = { w: terminal.width(), h: terminal.height()};
+            TermInfo.Rows = TermInfo.Size.h / TermInfo.Unit.h;
+            TermInfo.Cols = TermInfo.Size.w / TermInfo.Unit.w;
+            draw(terminal,20,TermInfo.Cols);
+            TermInfo.Size = { w: terminal.width(), h: terminal.height()};
+            TermInfo.Rows = TermInfo.Size.h / TermInfo.Unit.h;
+            TermInfo.Cols = TermInfo.Size.w / TermInfo.Unit.w;
+            $("#terminfo").text("(" + TermInfo.Rows + "," + TermInfo.Cols + ")");
+        });
+
+        function draw(div,rows,cols) {
+            rows = rows -2;
+            cols = cols -2;
+            var border = "+";
+            for(var i=0;i<cols;i++) {
+                border += "-";
+            }
+            border += "+";
+            var line = "|";
+            for(var j=0;j<cols;j++) {
+                line += " ";
+            }
+            line += "|";
+            div.append($('<div>'+border+'</div>').addClass("shell-line"));
+            for(var i=0;i<rows;i++) {
+                div.append($('<div>'+line+'</div>').addClass("shell-line"));
+            }
+            div.append($('<div>'+border+'</div>').addClass("shell-line"));
+        }
+
+    </script>
 </head>
 <body>
 <div id="shell-panel">
@@ -44,6 +122,15 @@
 <div>
     <p>Press <strong>~</strong> to activate console.</p>
 </div>
-
+<div class="shell-regular">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890 ?/;:'"[{]}\|-_=+!@#$%^&*()`~,<.></div>
+<div class="shell-italic">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890 ?/;:'"[{]}\|-_=+!@#$%^&*()`~,<.></div>
+<div class="shell-bold">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890 ?/;:'"[{]}\|-_=+!@#$%^&*()`~,<.></div>
+<div class="shell-bold-italic">abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890 ?/;:'"[{]}\|-_=+!@#$%^&*()`~,<.></div>
+<div id="terminal" class="shell-regular" style="margin: 0; padding: 0;">
+</div>
+<div id="terminfo"></div>
 </body>
+<div class="shell-regular" style="margin: 0; padding: 0;">XXX</div>
+<div class="shell-regular" style="margin: 0; padding: 0;">XXX</div>
+<div class="shell-regular" style="margin: 0; padding: 0;">XXX</div>
 </html>
