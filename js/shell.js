@@ -25,36 +25,26 @@ var Josh = Josh || {};
       }
     });
     var _prompt = config.prompt || 'jsh$';
-    var _shell_view_id = config.shell_view_id || '#shell-view';
-    var _shell_panel_id = config.shell_panel_id || '#shell-panel';
-    var _input_id = config.input_id || '#shell-cli';
-    var _input_html = config.input_html || '<div id="shell-cli"><strong class="prompt"></strong>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
-    var _search_html = config.search_html || '<div id="shell-cli">(reverse-i-search)`<span class="searchterm"></span>\':&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>';
-    var _suggest_html = config.suggest_html || '<div id="shell-suggest"></div>';
-    var _suggest_id = config.suggest_id = "#shell-suggest";
+    var _shell_view_id = config.shell_view_id || 'shell-view';
+    var _shell_panel_id = config.shell_panel_id || 'shell-panel';
+    var _input_id = config.input_id || 'shell-cli';
     var _blinktime = config.blinktime || 500;
     var _history = config.history || new Josh.History();
     var _readline = config.readline || new Josh.ReadLine({history: _history, console: _console});
     var _active = false;
     var _cursor_visible = false;
-    var _itemTemplate = _.template("<div><%- i %>&nbsp;<%- cmd %></div>");
     var _activationHandler;
     var _deactivationHandler;
     var _cmdHandlers = {
       clear: {
         exec: function(cmd, args, callback) {
-          $(_input_id).parent().empty();
+          $(id(_input_id)).parent().empty();
           callback();
         }
       },
       help: {
         exec: function(cmd, args, callback) {
-          var content = $('<div><div><strong>Commands:</strong></div></div>');
-          var itemTemplate = _.template('<div>&nbsp;<%=command%></div>');
-          _.each(commands(), function(command) {
-            content.append(itemTemplate({command: command}))
-          });
-          callback(content);
+          callback(self.templates.help({commands: commands()}));
         }
       },
       history: {
@@ -64,17 +54,12 @@ var Josh = Josh || {};
             callback();
             return;
           }
-          var content = $('<div></div>');
-          _.each(_history.items(), function(cmd, i) {
-            content.append(_itemTemplate({cmd: cmd, i: i}));
-          });
-          callback(content);
+          callback(self.templates.history({items: _history.items()}));
         }
       },
       _default: {
         exec: function(cmd, args, callback) {
-          var content = _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>', {cmd: cmd});
-          callback(content);
+          callback(self.templates.bad_command({cmd: cmd}));
         },
         completion: function(cmd, arg, line, callback) {
           if(!arg) {
@@ -97,11 +82,20 @@ var Josh = Josh || {};
     // public methods
     var self = {
       commands: commands,
+      templates: {
+        history: _.template("<div><% _.each(items, function(cmd, i) { %><div><%- i %>&nbsp;<%- cmd %></div><% }); %></div>"),
+        help: _.template("<div><div><strong>Commands:</strong></div><% _.each(commands, function(cmd) { %><div>&nbsp;<%- cmd %></div><% }); %></div>"),
+        bad_command: _.template('<div><strong>Unrecognized command:&nbsp;</strong><%=cmd%></div>'),
+        input_cmd: _.template('<div id="<%- id %>"><strong class="prompt"></strong>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>'),
+        input_search: _.template('<div id="<%- id %>">(reverse-i-search)`<span class="searchterm"></span>\':&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>'),
+        suggest: _.template("<div><% _.each(suggestions, function(suggestion) { %><div><%- suggestion %></div><% }); %></div>")
+
+      },
       isActive: function() {
         return _readline.isActive();
       },
       activate: function() {
-        if($(_shell_view_id).length == 0) {
+        if($(id(_shell_view_id)).length == 0) {
           _active = false;
           return;
         }
@@ -149,25 +143,25 @@ var Josh = Josh || {};
         if(_searchMatch) {
           cursorIdx = _searchMatch.cursoridx || 0;
           text = _searchMatch.text || '';
-          $(_input_id + ' .searchterm').text(_searchMatch.term);
+          $(id(_input_id) + ' .searchterm').text(_searchMatch.term);
         }
         var left = _.escape(text.substr(0, cursorIdx)).replace(/ /g, '&nbsp;');
         var cursor = text.substr(cursorIdx, 1);
         var right = _.escape(text.substr(cursorIdx + 1)).replace(/ /g, '&nbsp;');
-        $(_input_id + ' .prompt').text(_prompt);
-        $(_input_id + ' .input .left').html(left);
+        $(id(_input_id) + ' .prompt').text(_prompt);
+        $(id(_input_id) + ' .input .left').html(left);
         if(!cursor) {
-          $(_input_id + ' .input .cursor').html('&nbsp;').css('textDecoration', 'underline');
+          $(id(_input_id) + ' .input .cursor').html('&nbsp;').css('textDecoration', 'underline');
         } else {
-          $(_input_id + ' .input .cursor').text(cursor).css('textDecoration', 'underline');
+          $(id(_input_id) + ' .input .cursor').text(cursor).css('textDecoration', 'underline');
         }
-        $(_input_id + ' .input .right').html(right);
+        $(id(_input_id) + ' .input .right').html(right);
         _cursor_visible = true;
         self.scrollToBottom();
         _console.log('rendered "' + text + '" w/ cursor at ' + cursorIdx);
       },
       refresh: function() {
-        $(_input_id).replaceWith(_input_html);
+        $(id(_input_id)).replaceWith(self.templates.input_cmd({id:_input_id}));
         self.render();
         _console.log('refreshed ' + _input_id);
 
@@ -223,6 +217,10 @@ var Josh = Josh || {};
       }
     };
 
+    function id(id) {
+      return "#"+id;
+    }
+
     function commands() {
       return _.chain(_cmdHandlers).keys().filter(function(x) {
         return x[0] != "_"
@@ -239,9 +237,9 @@ var Josh = Josh || {};
         }
         _cursor_visible = !_cursor_visible;
         if(_cursor_visible) {
-          $(_input_id + ' .input .cursor').css('textDecoration', 'underline');
+          $(id(_input_id) + ' .input .cursor').css('textDecoration', 'underline');
         } else {
-          $(_input_id + ' .input .cursor').css('textDecoration', '');
+          $(id(_input_id) + ' .input .cursor').css('textDecoration', '');
         }
         blinkCursor();
       }, _blinktime);
@@ -259,11 +257,11 @@ var Josh = Josh || {};
 
     function renderOutput(output, callback) {
       if(output) {
-        $(_input_id).after(output);
+        $(id(_input_id)).after(output);
       }
-      $(_input_id + ' .input .cursor').css('textDecoration', '');
-      $(_input_id).removeAttr('id');
-      $(_shell_view_id).append(_input_html);
+      $(id(_input_id) + ' .input .cursor').css('textDecoration', '');
+      $(id(_input_id)).removeAttr('id');
+      $(id(_shell_view_id)).append(self.templates.input_cmd({id:_input_id}));
       if(_promptHandler) {
         return _promptHandler(function(prompt) {
           self.setPrompt(prompt);
@@ -276,13 +274,13 @@ var Josh = Josh || {};
     function activate() {
       _console.log("activating shell");
       if(!_view) {
-        _view = $(_shell_view_id);
+        _view = $(id(_shell_view_id));
       }
       if(!_panel) {
-        _panel = $(_shell_panel_id);
+        _panel = $(id(_shell_panel_id));
       }
-      if($(_input_id).length == 0) {
-        _view.append(_input_html);
+      if($(id(_input_id)).length == 0) {
+        _view.append(self.templates.input_cmd({id:_input_id}));
       }
       self.refresh();
       _active = true;
@@ -323,11 +321,11 @@ var Josh = Josh || {};
       });
     });
     _readline.onSearchStart(function() {
-      $(_input_id).replaceWith(_search_html);
+      $(id(_input_id)).replaceWith(self.templates.input_search({id:_input_id}));
       _console.log('started search');
     });
     _readline.onSearchEnd(function() {
-      $(_input_id).replaceWith(_input_html);
+      $(id(_input_id)).replaceWith(self.templates.input_cmd({id:_input_id}));
       _searchMatch = null;
       self.render();
       _console.log("ended search");
@@ -376,12 +374,7 @@ var Josh = Josh || {};
           return callback();
         }
         if(match.suggestions && match.suggestions.length > 1) {
-          var suggestion = $(_suggest_html);
-          for(var i = 0; i < match.suggestions.length; i++) {
-            _console.log("suggestion: " + match.suggestions[i]);
-            suggestion.append($("<div></div>").text(match.suggestions[i]));
-          }
-          return renderOutput(suggestion, function() {
+          return renderOutput(self.templates.suggest({suggestions: match.suggestions}), function() {
             callback(match.completion);
           });
         }
