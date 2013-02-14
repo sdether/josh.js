@@ -23,17 +23,15 @@ var Josh = Josh || {};
       }
     });
     var _shell = shell;
+    _shell.templates.not_found = _.template("<div><%=cmd%>: <%=path%>: No such file or directory</div>");
+    _shell.templates.ls = _.template("<div><% _.each(nodes, function(node) { %><span><%=node.name%>&nbsp;</span><% }); %></div>");
+    _shell.templates.pwd = _.template("<div><%=node.path %>&nbsp;</div>");
+    _shell.templates.prompt = _.template("<%= node.path %> $");
     var _original_default = _shell.getCommandHandler('_default');
     var self = {
       current: null,
       pathCompletionHandler: pathCompletionHandler,
       commandAndPathCompletionHandler: commandAndPathCompletionHandler,
-      templates: {
-        not_found: _.template("<div><%=cmd%>: <%=path%>: No such file or directory</div>"),
-        ls: _.template("<div><% _.each(nodes, function(node) { %><span><%=node.name%>&nbsp;</span><% }); %></div>"),
-        pwd: _.template("<div><%=node.path %>&nbsp;</div>"),
-        prompt: _.template("<%= node.path %> $")
-      },
       getNode: function(path, callback) {
         callback();
       },
@@ -41,7 +39,7 @@ var Josh = Josh || {};
         callback([]);
       },
       getPrompt: function() {
-        return self.templates.prompt({node: self.current});
+        return _shell.templates.prompt({node: self.current});
       }
     };
 
@@ -125,7 +123,7 @@ var Josh = Josh || {};
     function cd(cmd, args, callback) {
       self.getNode(args[0], function(node) {
         if(!node) {
-          return callback(self.templates.not_found({cmd: 'cd', path: args[0]}));
+          return callback(_shell.templates.not_found({cmd: 'cd', path: args[0]}));
         }
         self.current = node;
         return callback();
@@ -133,7 +131,7 @@ var Josh = Josh || {};
     }
 
     function pwd(cmd, args, callback) {
-      callback(self.templates.pwd({node: self.current}));
+      callback(_shell.templates.pwd({node: self.current}));
     }
 
     function ls(cmd, args, callback) {
@@ -148,11 +146,11 @@ var Josh = Josh || {};
 
     function render_ls(node, path, callback) {
       if(!node) {
-        return callback(self.templates.not_found({cmd: 'ls', path: path}));
+        return callback(_shell.templates.not_found({cmd: 'ls', path: path}));
       }
       return self.getChildNodes(node, function(children) {
         _console.log("finish render: " + node.name);
-        callback(self.templates.ls({nodes: children}));
+        callback(_shell.templates.ls({nodes: children}));
       });
     }
 

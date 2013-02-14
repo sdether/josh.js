@@ -1,4 +1,4 @@
-josh.js 0.2
+josh.js 0.3
 ===========
 
 http://sdether.github.com/josh.js/
@@ -124,6 +124,10 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 `killing.js` implements the kill and yank behavior as well as state tracking, i.e. multiple consecutive kills are combined as a single kill and killring rotation tracks the previous yank, so that the `readline.js` can remove the previous yank and replace it with the rotated text.
 
 ## Changelog
+
+**0.3** -- 2013/02/13
+* Removed all html used for Shell UI generation from config to `Shell.templates`, so that they can easily be customized (see: [Issue 11](https://github.com/sdether/josh.js/issues/11 )
+* Removed `PathHandler.templates`. PathHandler now attches its templates to `Shell.templates` as well
 
 **0.2.6** -- 2013/01/21
 * Removed Activation/Deactivation keybindings from Readline, making it an outside concern (see: [Issue 2](https://github.com/sdether/josh.js/issues/2 )
