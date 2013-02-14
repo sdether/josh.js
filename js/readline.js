@@ -15,7 +15,7 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
-Josh.Version = "0.2.6";
+Josh.Version = "0.2.7";
 (function(root) {
   var SPECIAL = {
     8: 'BACKSPACE',
