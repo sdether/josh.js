@@ -1,4 +1,4 @@
-josh.js 0.3
+josh.js 0.2
 ===========
 
 http://sdether.github.com/josh.js/
@@ -125,7 +125,7 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
-**0.3** -- 2013/02/13
+**0.2.7** -- 2013/02/13
 * Removed all html used for Shell UI generation from config to `Shell.templates`, so that they can easily be customized (see: [Issue 11](https://github.com/sdether/josh.js/issues/11 )
 * Removed `PathHandler.templates`. PathHandler now attches its templates to `Shell.templates` as well
 
