@@ -1,0 +1,10 @@
+.project
+src/config.js
+*~
+output/*
+*.diff
+output-min/*
+__*
+.#*
+config/
+.idea/
