@@ -61,6 +61,7 @@
       var uri = _self.api + "users/" + _self.user.login + "/repos?callback=?";
       _console.log("fetching: " + uri);
       return $.getJSON(uri, function(response) {
+        checkRateLimit(response.meta);
         _self.repos = response.data;
         callback();
       });
@@ -73,6 +74,7 @@
       var uri = _self.api + "users/" + user + "?callback=?";
       _console.log("fetching: " + uri);
       return $.getJSON(uri, function(response) {
+        checkRateLimit(response.meta);
         _self.user = response.data;
         getRepos(function() {
           setRepo(repo, function() {
@@ -82,11 +84,25 @@
       });
     }
 
+    function checkRateLimit(meta) {
+      _console.log(response.meta);
+      if(response.meta["X-RateLimit-Remaining"] == 0) {
+        alert("Whoops, you've hit the github rate limit. You'll need to authenticate to continue");
+      }
+      _shell.deactivate();
+    }
+
     function getDir(path, callback) {
-      var uri = _self.api + "repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path + "?ref=" + _self.branch + "&callback=?";
+      if(path && path.length > 1 && path[path.length-1] === '/') {
+        path = path.substr(0,path.length-1);
+      }
+      var uri = _self.api + "repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path + "?callback=?";
+      //var uri = _self.api + "repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path + "?ref=" + _self.branch + "&callback=?";
       _console.log("fetching: " + uri);
       $.getJSON(uri, function(response) {
+        checkRateLimit(response.meta);
         if(Object.prototype.toString.call(response.data) !== '[object Array]') {
+          _console.log("path '" + path + "' was a file");
           return callback();
         }
         var node = {
@@ -96,6 +112,7 @@
           path: path,
           children: response.data
         };
+        _console.log("got node at: " + node.path);
         return callback(node);
       });
     }
@@ -126,7 +143,7 @@
       return _.map(children, function(node) {
         return {
           name: node.name,
-          path: node.path,
+          path: "/" + node.path,
           isFile: node.type === 'file'
         };
       });
@@ -141,9 +158,29 @@
       if(!path) {
         return callback(_pathhandler.current);
       }
-      return getDir(path, function(node) {
-        callback(node);
-      })
+      var parts = _.filter(path.split("/"), function(x) {
+        return x;
+      });
+      _console.log(parts);
+      if(parts[0] === "..") {
+        _console.log("looking for parent relative");
+        var parentParts = _.filter(_pathhandler.current.path.split("/"), function(x) {
+          return x;
+        });
+        if(parentParts.length == 0) {
+          return callback(_pathhandler.current);
+        }
+        path = "/" + parentParts.slice(0, parentParts.length - 1).join('/') + "/" + parts.slice(1).join("/");
+      } else if(path[0] !== '/') {
+        _console.log("looking for current relative");
+        if(_pathhandler.current.path === '/') {
+          path = '/' + path;
+        } else {
+          path = _pathhandler.current.path + "/" + path;
+        }
+      }
+      _console.log("path to fetch: " + path);
+      return getDir(path, callback);
     };
     _pathhandler.getChildNodes = function(node, callback) {
       if(node.isfile) {
