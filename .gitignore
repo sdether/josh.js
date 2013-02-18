@@ -1,5 +1,4 @@
 .project
-src/config.js
 *~
 output/*
 *.diff
