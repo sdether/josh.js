@@ -21,8 +21,9 @@
     };
     var _shell = Josh.Shell({console: _console});
     var _pathhandler = new Josh.PathHandler(_shell, {console: _console});
+    var _rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(noAuthToken) {%> <a href='http://josh.claassen.net/github'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
     var _self = {
-      api: "https://api.github.com/",
+      api: "https://api.github.com/"
     };
     _shell.templates.repos = _.template("<ul class='widelist'><% _.each(repos, function(repo) { %><li><%- repo.name %></li><% }); %></ul>");
     _shell.templates.prompt = _.template("<em>[<%= self.user.login %>/<%= self.repo.name %>]</em></br>(<%=self.branch%>) <strong><%= node.path %> $</strong>");
@@ -58,24 +59,50 @@
     });
 
     function getRepos(callback) {
-      var uri = _self.api + "users/" + _self.user.login + "/repos?callback=?";
-      _console.log("fetching: " + uri);
-      return $.getJSON(uri, function(response) {
-        checkRateLimit(response.meta);
-        _self.repos = response.data;
+      return get("users/" + _self.user.login + "/repos", null, function(data) {
+        _self.repos = data;
         callback();
       });
+    }
+
+    function get(resource, args, callback) {
+      var url = _self.api + resource;
+      if(_self.access_token) {
+        args = args || {};
+        args.access_token = _self.access_token;
+      }
+      if(args) {
+        url += "?" + _.map(args,function(v, k) {
+          return k + "=" + v;
+        }).join("&");
+      }
+      _console.log("fetching: " + url);
+      var request = {
+        url: url,
+        dataType: 'jsonp'
+      };
+      $.ajax(request).done(function(response) {
+        _console.log(response.meta);
+        $('#ratelimit').html(_rateLimitTemplate({
+          remaining: response.meta["X-RateLimit-Remaining"],
+          limit: response.meta["X-RateLimit-Limit"],
+          noAuthToken: !_self.access_token
+        }));
+        if(response.meta["X-RateLimit-Remaining"] == 0) {
+          alert("Whoops, you've hit the github rate limit. You'll need to authenticate to continue");
+          _shell.deactivate();
+          return;
+        }
+        callback(response.data);
+      })
     }
 
     function setUser(user, repo, callback) {
       if(_self.user && _self.user.login === user) {
         return callback();
       }
-      var uri = _self.api + "users/" + user + "?callback=?";
-      _console.log("fetching: " + uri);
-      return $.getJSON(uri, function(response) {
-        checkRateLimit(response.meta);
-        _self.user = response.data;
+      return get("users/" + user, null, function(data) {
+        _self.user = data;
         getRepos(function() {
           setRepo(repo, function() {
             callback();
@@ -84,24 +111,13 @@
       });
     }
 
-    function checkRateLimit(meta) {
-      _console.log(response.meta);
-      if(response.meta["X-RateLimit-Remaining"] == 0) {
-        alert("Whoops, you've hit the github rate limit. You'll need to authenticate to continue");
-      }
-      _shell.deactivate();
-    }
-
     function getDir(path, callback) {
-      if(path && path.length > 1 && path[path.length-1] === '/') {
-        path = path.substr(0,path.length-1);
+      if(path && path.length > 1 && path[path.length - 1] === '/') {
+        path = path.substr(0, path.length - 1);
       }
-      var uri = _self.api + "repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path + "?callback=?";
       //var uri = _self.api + "repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path + "?ref=" + _self.branch + "&callback=?";
-      _console.log("fetching: " + uri);
-      $.getJSON(uri, function(response) {
-        checkRateLimit(response.meta);
-        if(Object.prototype.toString.call(response.data) !== '[object Array]') {
+      get("repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path, null, function(data) {
+        if(Object.prototype.toString.call(data) !== '[object Array]') {
           _console.log("path '" + path + "' was a file");
           return callback();
         }
@@ -110,7 +126,7 @@
             return x;
           })) || "",
           path: path,
-          children: response.data
+          children: data
         };
         _console.log("got node at: " + node.path);
         return callback(node);
@@ -200,13 +216,25 @@
 
 
     $(document).ready(function() {
-      var $consolePanel = $('#shell-panel');
-      $consolePanel.resizable({ handles: "s"});
-      _console.log("initializing 'sdether'");
-      setUser("sdether", "josh.js", function() {
-        _console.log("activating");
-        _shell.activate();
-      });
+      $.ajax({
+        url: 'http://josh.claassen.net/github-token',
+        type: "get",
+        dataType: "json",
+        xhrFields: {
+          withCredentials: true
+        }
+      })
+        .done(function(data) {
+          _console.log(data);
+          _self.access_token = data.access_token;
+          var $consolePanel = $('#shell-panel');
+          $consolePanel.resizable({ handles: "s"});
+          _console.log("initializing 'sdether'");
+          setUser("sdether", "josh.js", function() {
+            _console.log("activating");
+            _shell.activate();
+          });
+        });
     });
   })(root, $, _);
 })(this, $, _);
