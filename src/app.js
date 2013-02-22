@@ -40,4 +40,4 @@ app.get("/github-auth", function(req, res) {
     res.redirect("http://sdether.github.com/josh.js/githubconsole.html");
   });
 });
-app.listen(80);
+app.listen(config.port);
