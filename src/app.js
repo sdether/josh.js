@@ -4,7 +4,7 @@ var qs = require('querystring');
 var express = require('express');
 var app = express();
 var config = eval('(' + fs.readFileSync('../config/app.config', 'utf8') + ')');
-
+var authLog = fs.createWriteStream('/var/log/josh-auth.log', {flags: 'a'});
 app.configure(function() {
   app.use(express.cookieParser());
   app.use(express.bodyParser());
@@ -16,6 +16,7 @@ app.get("/github", function(req, res) {
 app.get("/github-token", function(req, res) {
   var token = req.cookies.access_token;
   console.log("token: " + token);
+  res.set('Access-Control-Allow-Credentials', 'true');
   res.set('Access-Control-Allow-Origin', 'http://sdether.github.com');
   res.send({access_token: token});
 });
@@ -35,9 +36,21 @@ app.get("/github-auth", function(req, res) {
     }
   }, function(error, response, body) {
     console.log(body);
-    body = JSON.parse(body);
-    res.cookie('access_token', body.access_token);
-    res.redirect("http://sdether.github.com/josh.js/githubconsole.html");
+    var auth = JSON.parse(body)
+    request({
+        method: 'get',
+        uri: 'https://api.github.com/user',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'token ' + auth.access_token
+        }
+      },
+      function(error, response, body) {
+        var user = JSON.parse(body);
+        authLog.write(new Date().toJSON()+"\t"+user.login+"\n");
+        res.cookie('access_token', auth.access_token);
+        res.redirect("http://sdether.github.com/josh.js/githubconsole.html");
+      });
   });
 });
 app.listen(config.port);
