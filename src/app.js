@@ -4,11 +4,12 @@ var qs = require('querystring');
 var express = require('express');
 var app = express();
 var config = eval('(' + fs.readFileSync('../config/app.config', 'utf8') + ')');
-var authLog = fs.createWriteStream('/var/log/josh-auth.log', {flags: 'a'});
+var authLog = fs.createWriteStream(config.authLog, {flags: 'a'});
 app.configure(function() {
   app.use(express.cookieParser());
   app.use(express.bodyParser());
 });
+
 
 app.get("/github", function(req, res) {
   res.redirect("https://github.com/login/oauth/authorize?client_id=" + config.github.client_id);
@@ -53,4 +54,10 @@ app.get("/github-auth", function(req, res) {
       });
   });
 });
+app.get('/hello',function(req,res) {
+	res.send({hello:'world'});
+    });
+app.get('*', function(req,res) {
+  res.redirect("http://sdether.github.com/josh.js/");
+    });
 app.listen(config.port);
