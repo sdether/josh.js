@@ -32,18 +32,15 @@
     _shell.templates.repo = _.template("<div><div><strong>Name: </strong><%=repo.full_name%></div><div><strong>Description: </strong><%=repo.description %></div></div>");
     _shell.templates.ls = _.template("<ul class='widelist'><% _.each(nodes, function(node) { %><li><%- node.name %></li><% }); %></ul>");
 
-
-    _shell.setCommandHandler("repos", {
-      exec: function(cmd, args, callback) {
-        callback(_shell.templates.repos({repos: _self.repos}));
-      }
-    });
     _shell.setCommandHandler("repo", {
       exec: function(cmd, args, callback) {
         if(!args || args.length == 0) {
           return callback(_shell.templates.repo({repo: _self.repo}));
         }
         var name = args[0];
+        if(name === '-l') {
+          return callback(_shell.templates.repos({repos: _self.repos}));
+        }
         return setRepo(args[0], function(repo) {
           if(!repo) {
             return callback(_shell.templates.repo_not_found({repo: name, user: _self.user.login}));
@@ -55,6 +52,24 @@
         callback(_shell.bestMatch(arg, _.map(_self.repos, function(repo) {
           return repo.name;
         })));
+      }
+    });
+    _shell.setCommandHandler("branch", {
+      exec: function(cmd, args, callback) {
+        if(!args || args.length == 0) {
+          return callback(_self.branch);
+        }
+        var branch = args[0];
+        if(branch === '-l') {
+          return ensureBranches(function() {
+            return callback(_shell.templates.branches({branches: _self.branches}));
+          });
+        }
+        _self.branch = branch;
+        return getDir("/", function(node) {
+          _pathhandler.current = node;
+          callback(repo);
+        });
       }
     });
 
@@ -115,8 +130,7 @@
       if(path && path.length > 1 && path[path.length - 1] === '/') {
         path = path.substr(0, path.length - 1);
       }
-      //var uri = _self.api + "repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path + "?ref=" + _self.branch + "&callback=?";
-      get("repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path, null, function(data) {
+      get("repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path, {ref: _self.branch}, function(data) {
         if(Object.prototype.toString.call(data) !== '[object Array]') {
           _console.log("path '" + path + "' was a file");
           return callback();
