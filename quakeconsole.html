@@ -44,7 +44,10 @@
       overflow: scroll;
       overflow-x: hidden;
       overflow-y: scroll;
-    }</style>
+    }
+  #shell-cli .prompt {
+    font-weight: bold;
+  }</style>
 </head>
 <body>
 <div id="shell-panel">
@@ -64,8 +67,11 @@
     <h1>Quake-style console with unix-style path handling</h1>
 
     <p>This tutorial shows implements a quake-style shell that drops down over your current page. Inside the shell a fake filesystem illustrates how
-      <code>Pathhandler.js</code> can be used to provide standard unix commands ls, cd, pwd and filepath tab completion. Type <code>~</code> to activate the shell we will be building in this tutorial.
+      <code>Pathhandler.js</code> can be used to provide standard unix commands ls, cd, pwd and filepath tab completion.
     </p>
+
+    <h2>Try out the Console</h2>
+    <p>Type <code>~</code> to activate the shell we will be building in this tutorial.</p>
 
     <h2>Hooking up PathHandler.js</h2>
 

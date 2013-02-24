@@ -38,6 +38,10 @@
       overflow-x: hidden;
       overflow-y: scroll;
       border: 1px dashed #E6EBE0;
+    }
+
+    #shell-cli .prompt {
+      font-weight: bold;
     }</style>
 </head>
 <body>
@@ -102,7 +106,12 @@ Drag bottom of shell to change size.
   <li>
     <a href="helloworld.html">Hello world</a> - put a console on a web page and add a new custom command with completion
   </li>
-  <li><a href="quakeconsole.html">Quake Console</a> - Create a <em>quake</em>-style console with <code>ls</code>, <code>cd</code>, <code>pwd</code> and bash filename tab-completion</li>
+  <li><a href="quakeconsole.html">Quake Console</a> - Create a <em>quake</em>-style console with <code>ls</code>,
+    <code>cd</code>, <code>pwd</code> and bash filename tab-completion
+  </li>
+  <li>
+    <a href="githubconsole.html">GitHub Console</a> - Extend the Quake Console to talk to GitHub's REST API to navigate repositories, their branches and file system
+  </li>
 </ul>
 <h2>License</h2>
 
@@ -268,8 +277,10 @@ Drag bottom of shell to change size.
 </h3>
 
 <p><code>pathhandler.js</code> is a mix in to easily add the <code>cd</code>, <code>ls</code> and
-  <code>pwd</code> commands as well as path completion. It has <a href="http://underscorejs.org/">Underscore</a> as its dependency for templating, however since all
-  templates it uses are exposed, they could easily be replaced with a different function that accepts an argument object returns html.</p>
+  <code>pwd</code> commands as well as path completion. It has
+  <a href="http://underscorejs.org/">Underscore</a> as its dependency for templating, however since all
+  templates it uses are exposed, they could easily be replaced with a different function that accepts an argument object returns html.
+</p>
 
 <p>By implementing the functions <code>getNode</code> and
   <code>getChildNodes</code>, this library adds path traversal, discovery and completion just like a bash shell.

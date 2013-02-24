@@ -15,71 +15,214 @@
  *-------------------------------------------------------------------------*/
 (function(root, $, _) {
   Josh.GitHubConsole = (function(root, $, _) {
+
+    // Enable console debugging, when Josh.Debug is set and there is a console object on the document root.
     var _console = (Josh.Debug && root.console) ? root.console : {
       log: function() {
       }
     };
-    var _shell = Josh.Shell({console: _console});
-    var _pathhandler = new Josh.PathHandler(_shell, {console: _console});
-    var _rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(noAuthToken) {%> <a href='http://josh.claassen.net/github'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
+
+    // Console State
+    // -------------
+
+    // `_self` contains all state variables for the console's operation
     var _self = {
+      shell: Josh.Shell({console: _console}),
       api: "https://api.github.com/"
     };
-    _shell.templates.repos = _.template("<ul class='widelist'><% _.each(repos, function(repo) { %><li><%- repo.name %></li><% }); %></ul>");
-    _shell.templates.prompt = _.template("<em>[<%= self.user.login %>/<%= self.repo.name %>]</em></br>(<%=self.branch%>) <strong><%= node.path %> $</strong>");
-    _shell.templates.input_cmd = _.template('<div id="<%- id %>"><span class="prompt"></span>&nbsp;<span class="input"><span class="left"/><span class="cursor"/><span class="right"/></span></div>');
-    _shell.templates.repo_not_found = _.template("<div>repo: <%=repo%>: No such repo for user '<%= user %>'</div>");
-    _shell.templates.repo = _.template("<div><div><strong>Name: </strong><%=repo.full_name%></div><div><strong>Description: </strong><%=repo.description %></div></div>");
-    _shell.templates.ls = _.template("<ul class='widelist'><% _.each(nodes, function(node) { %><li><%- node.name %></li><% }); %></ul>");
 
-    _shell.setCommandHandler("repo", {
+    // `Josh.PathHandler` is attached to `Josh.Shell` to provide basic file system navigation.
+    _self.pathhandler = new Josh.PathHandler(_self.shell, {console: _console});
+
+    // Custom Templates
+    // ----------------
+    // `Josh.Shell` uses *Underscore* templates for rendering output to the shell. This console overrides some and adds a couple of new ones for its own commands.
+
+    // Override of the default prompt to provide a multi-line prompt of the current user, repo and path and branch.
+    _self.shell.templates.prompt = _.template("<em>[<%= self.user.login %>/<%= self.repo.name %>]</em></br>(<%=self.branch%>) <strong><%= node.path %> $</strong>");
+
+    // Override of the pathhandler ls template to create a multi-column listing.
+    _self.shell.templates.ls = _.template("<ul class='widelist'><% _.each(nodes, function(node) { %><li><%- node.name %></li><% }); %></ul><div class='clear'/>");
+
+    // Override of the pathhandler not_found template, since we will throw not_found if you try to access a valid file. This is done for the simplicity of the tutorial.
+    _self.shell.templates.not_found = _.template("<div><%=cmd%>: <%=path%>: No such directory</div>");
+
+    // Since GitHub rate limits un-authenticated use rather drastically, we render the current rate limit status in the shell so that it is clear that extended experimenting requires authentication.
+    var _rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(noAuthToken) {%> <a href='http://josh.claassen.net/github'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
+    _self.shell.templates.user = _.template("<div class='userinfo'>" +
+      "<img src='<%=user.avatar_url%>' style='float:right;'/>" +
+      "<table>" +
+      "<tr><td><strong>Id:</strong></td><td><%=user.id %></td></tr>" +
+      "<tr><td><strong>Name:</strong></td><td><%=user.login %></td></tr>" +
+      "<tr><td><strong>Location:</strong></td><td><%=user.location %></td></tr>" +
+      "</table>" +
+      "</div>"
+    );
+
+    // Generic error in case setting the user fails.
+    _self.shell.templates.user_error = _.template("Unable to set user '<%=name%>': <%=msg%>");
+
+    // Just like `ls`, we render a wide list of repositories for `repo -l`.
+    _self.shell.templates.repos = _.template("<ul class='widelist'><% _.each(repos, function(repo) { %><li><%- repo.name %></li><% }); %></ul><div class='clear'/>");
+
+    // Whenever we change repositories or `repo` is called without an argument, we show basic information about the repo.
+    _self.shell.templates.repo = _.template("<div><div><strong>Name: </strong><%=repo.full_name%></div><div><strong>Description: </strong><%=repo.description %></div></div>");
+
+    // Error in case someone tries to switch to an invalid repo.
+    _self.shell.templates.repo_not_found = _.template("<div>repo: <%=repo%>: No such repo for user '<%= user %>'</div>");
+
+    // Generic error in case setting the repo fails.
+    _self.shell.templates.repo_error = _.template("Unable to switch to repository '<%=name%>': <%=msg%>");
+
+    // Again, like `ls`, we render a wide like of branches for `branch -l`.
+    _self.shell.templates.branches = _.template("webfont.woff<ul class='widelist'><% _.each(branches, function(branch) { %><li><%- branch.name %></li><% }); %></ul><div class='clear'/>");
+
+    // Generic error in case setting the current branch fails.
+    _self.shell.templates.branch_error = _.template("Unable to switch to branch '<%=name%>': <%=msg%>");
+
+    // Generic error in case fetching the list of branches fails.
+    _self.shell.templates.branches_error = _.template("Unable to load branch list: <%=msg%>");
+
+    // Adding Commands to the Console
+    // ------------------------------
+    _self.shell.setCommandHandler("user", {
       exec: function(cmd, args, callback) {
         if(!args || args.length == 0) {
-          return callback(_shell.templates.repo({repo: _self.repo}));
+          return callback(_self.shell.templates.user({user: _self.user}));
+        }
+        var username = args[0];
+        return setUser(username, null,
+          function(msg) {
+            return callback(_self.shell.templates.user_error({name: username, msg: msg}));
+          },
+          function(user) {
+            return callback(_self.shell.templates.user({user: user}));
+          }
+        );
+      }
+    });
+    _self.shell.setCommandHandler("repo", {
+      exec: function(cmd, args, callback) {
+        if(!args || args.length == 0) {
+          return callback(_self.shell.templates.repo({repo: _self.repo}));
         }
         var name = args[0];
         if(name === '-l') {
-          return callback(_shell.templates.repos({repos: _self.repos}));
+          return callback(_self.shell.templates.repos({repos: _self.repos}));
         }
-        return setRepo(args[0], function(repo) {
-          if(!repo) {
-            return callback(_shell.templates.repo_not_found({repo: name, user: _self.user.login}));
+        var repo = getRepo(name, _self.repos);
+        if(!repo) {
+          return callback(_self.shell.templates.repo_error({name: name, msg: 'no such repo'}));
+        }
+        return setRepo(repo,
+          function(msg) {
+            return callback(_self.shell.templates.repo_error({name: name, msg: msg}));
+          },
+          function(repo) {
+            if(!repo) {
+              return callback(_self.shell.templates.repo_not_found({repo: name, user: _self.user.login}));
+            }
+            return callback(_self.shell.templates.repo({repo: _self.repo}));
           }
-          return callback(_shell.templates.repo({repo: _self.repo}));
-        });
+        );
       },
       completion: function(cmd, arg, line, callback) {
-        callback(_shell.bestMatch(arg, _.map(_self.repos, function(repo) {
+        callback(_self.shell.bestMatch(arg, _.map(_self.repos, function(repo) {
           return repo.name;
         })));
       }
     });
-    _shell.setCommandHandler("branch", {
+    _self.shell.setCommandHandler("branch", {
       exec: function(cmd, args, callback) {
         if(!args || args.length == 0) {
           return callback(_self.branch);
         }
         var branch = args[0];
         if(branch === '-l') {
-          return ensureBranches(function() {
-            return callback(_shell.templates.branches({branches: _self.branches}));
-          });
+          return ensureBranches(
+            function(msg) {
+              callback(_self.shell.templates.branches_error({msg: msg}));
+            },
+            function() {
+              return callback(_self.shell.templates.branches({branches: _self.branches}));
+            }
+          );
         }
-        _self.branch = branch;
-        return getDir("/", function(node) {
-          _pathhandler.current = node;
-          callback(repo);
+        return getDir(_self.repo.full_name, branch, "/", function(node) {
+          if(!node) {
+            callback(_self.shell.templates.branch_error({name: branch, msg: "unable to load root directory for branch"}));
+          }
+          _self.branch = branch;
+          _self.pathhandler.current = node;
+          callback();
         });
+      },
+      completion: function(cmd, arg, line, callback) {
+        return ensureBranches(
+          function() {
+            callback();
+          },
+          function() {
+            callback(_self.shell.bestMatch(arg, _.map(_self.branches, function(branch) {
+              return branch.name;
+            })));
+          }
+        );
       }
     });
 
-    function getRepos(callback) {
-      return get("users/" + _self.user.login + "/repos", null, function(data) {
-        _self.repos = data;
-        callback();
-      });
-    }
+    // prompt configuration
+    _self.shell.onNewPrompt(function(callback) {
+      callback(_self.shell.templates.prompt({self: _self, node: _self.pathhandler.current}));
+    });
 
+    // wiring up pathhandler for navigating repository file system
+    _self.pathhandler.getNode = function(path, callback) {
+      _console.log("looking for node at: " + path);
+      if(!path) {
+        return callback(_self.pathhandler.current);
+      }
+      var parts = _.filter(path.split("/"), function(x) {
+        return x;
+      });
+      _console.log(parts);
+      if(parts[0] === "..") {
+        _console.log("looking for parent relative");
+        var parentParts = _.filter(_self.pathhandler.current.path.split("/"), function(x) {
+          return x;
+        });
+        if(parentParts.length == 0) {
+          return callback(_self.pathhandler.current);
+        }
+        path = "/" + parentParts.slice(0, parentParts.length - 1).join('/') + "/" + parts.slice(1).join("/");
+      } else if(path[0] !== '/') {
+        _console.log("looking for current relative");
+        if(_self.pathhandler.current.path === '/') {
+          path = '/' + path;
+        } else {
+          path = _self.pathhandler.current.path + "/" + path;
+        }
+      }
+      _console.log("path to fetch: " + path);
+      return getDir(_self.repo.full_name, _self.branch, path, callback);
+    };
+    _self.pathhandler.getChildNodes = function(node, callback) {
+      if(node.isfile) {
+        _console.log("it's a file, no children");
+        return callback();
+      }
+      if(node.children) {
+        _console.log("got children, let's turn them into nodes");
+        return callback(makeNodes(node.children));
+      }
+      _console.log("no children, fetch them");
+      return getDir(_self.repo.full_name, _self.branch, node.path, function(detailNode) {
+        node.children = detailNode.children;
+        callback(makeNodes(node.children));
+      });
+    };
+
+    // supporting functions
     function get(resource, args, callback) {
       var url = _self.api + resource;
       if(_self.access_token) {
@@ -105,32 +248,59 @@
         }));
         if(response.meta["X-RateLimit-Remaining"] == 0) {
           alert("Whoops, you've hit the github rate limit. You'll need to authenticate to continue");
-          _shell.deactivate();
-          return;
+          _self.shell.deactivate();
+          return null;
         }
-        callback(response.data);
+        if(response.meta.status != 200) {
+          return callback();
+        }
+        return callback(response.data);
       })
     }
 
-    function setUser(user, repo, callback) {
-      if(_self.user && _self.user.login === user) {
+    function ensureBranches(err, callback) {
+      get("repos/" + _self.repo.full_name + "/branches", null, function(branches) {
+        if(!branches) {
+          return err("api request failed to return branch list");
+        }
+        _self.branches = branches;
         return callback();
+      });
+    }
+
+    function setUser(user_name, repo_name, err, callback) {
+      if(_self.user && _self.user.login === user_name) {
+        return callback(_self.user);
       }
-      return get("users/" + user, null, function(data) {
-        _self.user = data;
-        getRepos(function() {
-          setRepo(repo, function() {
-            callback();
-          });
+      return get("users/" + user_name, null, function(user) {
+        if(!user) {
+          return err("no such user");
+        }
+        return initializeRepos(user, repo_name, err, function(repo) {
+          _self.user = user;
+          return callback(_self.user);
         });
       });
     }
 
-    function getDir(path, callback) {
+    function initializeRepos(user, repo_name, err, callback) {
+      return getRepos(user.login, function(repos) {
+        var repo = getRepo(repo_name, repos);
+        if(!repo) {
+          return err("user has no repositories");
+        }
+        return setRepo(repo, err, function(repo) {
+          _self.repos = repos;
+          return callback(repo);
+        });
+      });
+    }
+
+    function getDir(repo_full_name, branch, path, callback) {
       if(path && path.length > 1 && path[path.length - 1] === '/') {
         path = path.substr(0, path.length - 1);
       }
-      get("repos/" + _self.user.login + "/" + _self.repo.name + "/contents" + path, {ref: _self.branch}, function(data) {
+      get("repos/" + repo_full_name + "/contents" + path, {ref: branch}, function(data) {
         if(Object.prototype.toString.call(data) !== '[object Array]') {
           _console.log("path '" + path + "' was a file");
           return callback();
@@ -147,25 +317,40 @@
       });
     }
 
-    function setRepo(repoName, callback) {
-      _console.log("setting repo to '" + repoName + "'");
+    function getRepos(userLogin, callback) {
+      return get("users/" + userLogin + "/repos", null, function(data) {
+        callback(data);
+      });
+    }
+
+    function getRepo(repo_name, repos) {
+      if(!repos || repos.length == 0) {
+        return null;
+      }
       var repo;
-      if(repoName) {
-        repo = _.find(_self.repos, function(repo) {
-          return repo.name === repoName;
+      if(repo_name) {
+        repo = _.find(repos, function(repo) {
+          return repo.name === repo_name;
         });
         if(!repo) {
           return callback();
         }
       } else {
-        repo = _self.repos[0];
+        repo = repos[0];
       }
-      _self.repo = repo;
-      _self.branch = repo.default_branch || "master";
-      return getDir("/", function(node) {
-        _console.log("initializing pathhandler node");
-        _pathhandler.current = node;
-        callback(repo);
+      return repo;
+    }
+
+    function setRepo(repo, err, callback) {
+      return getDir(repo.full_name, repo.default_branch, "/", function(node) {
+        if(!node) {
+          return err("could not initialize root directory of repository '" + repo.full_name + "'");
+        }
+        _console.log("setting repo to '" + repo.name + "'");
+        _self.repo = repo;
+        _self.branch = repo.default_branch;
+        _self.pathhandler.current = node;
+        return callback(repo);
       });
     }
 
@@ -179,56 +364,70 @@
       });
     }
 
-    _shell.onNewPrompt(function(callback) {
-      callback(_shell.templates.prompt({self: _self, node: _pathhandler.current}));
-    });
-
-    _pathhandler.getNode = function(path, callback) {
-      _console.log("looking for node at: " + path);
-      if(!path) {
-        return callback(_pathhandler.current);
-      }
-      var parts = _.filter(path.split("/"), function(x) {
-        return x;
-      });
-      _console.log(parts);
-      if(parts[0] === "..") {
-        _console.log("looking for parent relative");
-        var parentParts = _.filter(_pathhandler.current.path.split("/"), function(x) {
-          return x;
+    function initialize(access_token) {
+      _self.access_token = access_token;
+      if(_self.access_token) {
+        get("user", null, function(user) {
+          if(!user) {
+            return initializationError("user", "unable able to fetch default user");
+          }
+          _console.log("intializing w/ user '" + user.login + "'");
+          return initializeRepos(user, null,
+            function(msg) {
+              initializationError("repo init", msg);
+            },
+            function(repo) {
+              _self.user = user;
+              initializeUI();
+            }
+          );
         });
-        if(parentParts.length == 0) {
-          return callback(_pathhandler.current);
+      } else {
+        _console.log("initializing default w/ 'sdether'");
+        setUser("sdether", "josh.js",
+          function(msg) {
+            initializationError("default", msg);
+          },
+          initializeUI
+        );
+      }
+    }
+
+    function initializationError(context, msg) {
+      _console.log("[" + context + "] failed to initialize: " + msg);
+      alert("unable to initialize shell. Encountered a problem talking to github api. Try reloading the page");
+    }
+
+    function initializeUI() {
+      _console.log("activating");
+      var $consolePanel = $('#shell-container');
+      $consolePanel.resizable({ handles: "s"});
+      $(document).keypress(function(event) {
+        if(_self.shell.isActive()) {
+          return;
         }
-        path = "/" + parentParts.slice(0, parentParts.length - 1).join('/') + "/" + parts.slice(1).join("/");
-      } else if(path[0] !== '/') {
-        _console.log("looking for current relative");
-        if(_pathhandler.current.path === '/') {
-          path = '/' + path;
-        } else {
-          path = _pathhandler.current.path + "/" + path;
+        if(event.keyCode == 126) {
+          event.preventDefault();
+          activateAndShow();
         }
-      }
-      _console.log("path to fetch: " + path);
-      return getDir(path, callback);
-    };
-    _pathhandler.getChildNodes = function(node, callback) {
-      if(node.isfile) {
-        _console.log("it's a file, no children");
-        return callback();
-      }
-      if(node.children) {
-        _console.log("got children, let's turn them into nodes");
-        return callback(makeNodes(node.children));
-      }
-      _console.log("no children, fetch them");
-      return getDir(node.path, function(detailNode) {
-        node.children = detailNode.children;
-        callback(makeNodes(node.children));
       });
-    };
+      function activateAndShow() {
+        _self.shell.activate();
+        $consolePanel.slideDown();
+        $consolePanel.focus();
+      }
 
+      function hideAndDeactivate() {
+        _self.shell.deactivate();
+        $consolePanel.slideUp();
+        $consolePanel.blur();
+      }
 
+      _self.shell.onEOT(hideAndDeactivate);
+      _self.shell.onCancel(hideAndDeactivate);
+    }
+
+    // initialization & activation
     $(document).ready(function() {
       $.ajax({
         url: 'http://josh.claassen.net/github-token',
@@ -240,14 +439,7 @@
       })
         .done(function(data) {
           _console.log(data);
-          _self.access_token = data.access_token;
-          var $consolePanel = $('#shell-panel');
-          $consolePanel.resizable({ handles: "s"});
-          _console.log("initializing 'sdether'");
-          setUser("sdether", "josh.js", function() {
-            _console.log("activating");
-            _shell.activate();
-          });
+          initialize(data.access_token);
         });
     });
   })(root, $, _);
