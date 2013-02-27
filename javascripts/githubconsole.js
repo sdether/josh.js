@@ -38,7 +38,7 @@
     // ----------------
     // `Josh.Shell` uses *Underscore* templates for rendering output to the shell. This console overrides some and adds a couple of new ones for its own commands.
 
-    // Override of the default prompt to provide a multi-line prompt of the current user, repo and path and branch.
+    // **templates.prompt** - Override of the default prompt to provide a multi-line prompt of the current user, repo and path and branch.
     _self.shell.templates.prompt = _.template("<em>[<%= self.user.login %>/<%= self.repo.name %>]</em></br>(<%=self.branch%>) <strong><%= node.path %> $</strong>");
 
     // Override of the pathhandler ls template to create a multi-column listing.
