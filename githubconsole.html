@@ -182,25 +182,53 @@ get("user", null, function(user) {
       <code>setUser</code>, Josh functions never have an error handler. Since Josh interacts with the UI, it has no concept of failure -- it has to continue executing. It is up to the caller to deal with errors and transform them into the appropriate UI response. But it still gives us the flexibility to undertake an asynchronous actions, such as calling a remote API and complete the function execution upon the asynchronous return of the remote call.
     </p>
 
-    <h3><a href="docs/githubconsole.html#cmd.user">user [<em>username</em>]</a></h3>
+    <h3><a href="docs/githubconsole.html#cmd.user" target="_blank">user [<em>username</em>]</a></h3>
 
-    <p>The <a href="docs/githubconsole.html#cmd.user"><code>user</code></a> command does not have
+    <p>The <a href="docs/githubconsole.html#cmd.user" target="_blank"><code>user</code></a> command does not have
       <code>TAB</code> completion, since doing efficient tab completion against the full set of GitHub users is beyond this tutorial. Instead it expects a valid username to call
       <a href="docs/githubconsole.html#setUser" target="_blank"><code>setUser(user_name, repo_name, err, callback)</code></a> with and on completion renders the user template with the new current user.
     </p>
 
     <p>If called without a <em>username</em>, we simply render user template with the current user.</p>
 
-    <h3><a href="docs/githubconsole.html#cmd.repo">repo [<em>-l | reponame</em>]</a></h3>
-    <p>The <a href="docs/githubconsole.html#cmd.repo"><code>repo</code></a> command can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
+    <h3><a href="docs/githubconsole.html#cmd.repo" target="_blank">repo [<em>-l | reponame</em>]</a></h3>
 
-    <p>Given no argument, we simple render the repository template with the current repository</p>
-    <p>If the argument is <em>-l</em>, we render the repository list template with the repositories we fetched on user initialization.</p>
+    <p>The
+      <a href="docs/githubconsole.html#cmd.repo" target="_blank"><code>repo</code></a> command can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
+      <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
 
-    <p>Finally, the argument is used to try and retrieve the repository from the known repositories. If that succeeds, we call <a href="docs/githubconsole.html#setRepo"><code>setRepo(repo, err, callback)</code></a>, which fetches the root directory to initialize the current node of <code>Josh.PathHandler</code> before changing the current repository to the one specified. Upon switching we again render the repository template with the now current repository.</p>
+    <p>Given no argument, we simply render the repository template with the current repository</p>
 
-    <p>The completion handler for the command simply calls <code>Josh.Shell.bestMatch</code> with the partial argument and a list of all repository names. <code>bestMatch</code> takes care of creating the completion object with the appropriate argument completion and list of possible choices.</p>
+    <p>If the argument is
+      <em>-l</em>, we render the repository list template with the repositories we fetched on user initialization.</p>
+
+    <p>Finally, the argument is used to try and retrieve the repository from the known repositories. If that succeeds, we call
+      <a href="docs/githubconsole.html#setRepo" target="_blank"><code>setRepo(repo, err, callback)</code></a>, which fetches the root directory to initialize the current node of
+      <code>Josh.PathHandler</code> before changing the current repository to the one specified. Upon switching we again render the repository template with the now current repository.
+    </p>
+
+    <p>The completion handler for the command simply calls
+      <code>Josh.Shell.bestMatch</code> with the partial argument and a list of all repository names.
+      <code>bestMatch</code> takes care of creating the completion object with the appropriate argument completion and list of possible choices.
+    </p>
   </section>
+
+  <h3><a href="docs/githubconsole.html#cmd.branch" target="_blank">branch [<em>-l | branchname</em>]</a></h3>
+
+  <p>T can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
+    <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
+
+  <p>Given no argument, the
+    <a href="docs/githubconsole.html#cmd.branch" target="_blank"><code>branch</code></a> command simply prints the current branch name. The
+    <em>-l</em> argument renders a list of all known branches for the current repository, while an actualy branchname as argument will cause the console to change its current branch.</p>
+
+  <p>Showing the list of branches uses <a href="docs/githubconsole.html#ensureBranches" target="_blank"><code>ensureBranches(err, callback)</code></a> to lazily initialize the list of branches from the API.</p>
+
+  <p>The completion handler for the command simply calls
+    <code>Josh.Shell.bestMatch</code> with the partial argument and a list of all repository names.
+    <code>bestMatch</code> takes care of creating the completion object with the appropriate argument completion and list of possible choices.
+  </p>
+
 </div>
 <!--[if !IE]>
 <script>fixScale(document);</script><![endif]-->
