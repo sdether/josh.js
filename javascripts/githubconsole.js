@@ -23,8 +23,8 @@
     };
 
     // Console State
-    // -------------
-
+    // --------------------------------------------
+    //
     // `_self` contains all state variables for the console's operation
     var _self = {
       shell: Josh.Shell({console: _console}),
@@ -38,17 +38,29 @@
     // ----------------
     // `Josh.Shell` uses *Underscore* templates for rendering output to the shell. This console overrides some and adds a couple of new ones for its own commands.
 
+    // **templates.prompt**
+
     // Override of the default prompt to provide a multi-line prompt of the current user, repo and path and branch.
     _self.shell.templates.prompt = _.template("<em>[<%= self.user.login %>/<%= self.repo.name %>]</em></br>(<%=self.branch%>) <strong><%= node.path %> $</strong>");
+
+    // **templates.ls**
 
     // Override of the pathhandler ls template to create a multi-column listing.
     _self.shell.templates.ls = _.template("<ul class='widelist'><% _.each(nodes, function(node) { %><li><%- node.name %></li><% }); %></ul><div class='clear'/>");
 
-    // Override of the pathhandler not_found template, since we will throw not_found if you try to access a valid file. This is done for the simplicity of the tutorial.
+    // **templates.not_found**
+
+    // Override of the pathhandler *not_found* template, since we will throw *not_found* if you try to access a valid file. This is done for the simplicity of the tutorial.
     _self.shell.templates.not_found = _.template("<div><%=cmd%>: <%=path%>: No such directory</div>");
 
+    //**templates.rateLimitTemplate**
+
     // Since GitHub rate limits un-authenticated use rather drastically, we render the current rate limit status in the shell so that it is clear that extended experimenting requires authentication.
-    var _rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(noAuthToken) {%> <a href='http://josh.claassen.net/github'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
+    _self.shell.templates.rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(noAuthToken) {%> <a href='http://josh.claassen.net/github'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
+
+    //**templates.user**
+
+    // Render basic information (including gravatar) whenever we switch users or enter `user` without an argument
     _self.shell.templates.user = _.template("<div class='userinfo'>" +
       "<img src='<%=user.avatar_url%>' style='float:right;'/>" +
       "<table>" +
@@ -59,12 +71,15 @@
       "</div>"
     );
 
+    // **templates.user_error**
     // Generic error in case setting the user fails.
     _self.shell.templates.user_error = _.template("Unable to set user '<%=name%>': <%=msg%>");
 
+    // **templates.repos**
     // Just like `ls`, we render a wide list of repositories for `repo -l`.
     _self.shell.templates.repos = _.template("<ul class='widelist'><% _.each(repos, function(repo) { %><li><%- repo.name %></li><% }); %></ul><div class='clear'/>");
 
+    //
     // Whenever we change repositories or `repo` is called without an argument, we show basic information about the repo.
     _self.shell.templates.repo = _.template("<div><div><strong>Name: </strong><%=repo.full_name%></div><div><strong>Description: </strong><%=repo.description %></div></div>");
 
@@ -85,6 +100,9 @@
 
     // Adding Commands to the Console
     // ------------------------------
+
+    //<section id='cmd.user'/>
+
     _self.shell.setCommandHandler("user", {
       exec: function(cmd, args, callback) {
         if(!args || args.length == 0) {
@@ -101,6 +119,9 @@
         );
       }
     });
+
+    //<section id='cmd.repo'/>
+
     _self.shell.setCommandHandler("repo", {
       exec: function(cmd, args, callback) {
         if(!args || args.length == 0) {
@@ -132,6 +153,9 @@
         })));
       }
     });
+
+    //<section id='cmd.branch'/>
+
     _self.shell.setCommandHandler("branch", {
       exec: function(cmd, args, callback) {
         if(!args || args.length == 0) {
@@ -171,10 +195,15 @@
       }
     });
 
+    //<section id='onNewPrompt'/>
+
     // prompt configuration
     _self.shell.onNewPrompt(function(callback) {
       callback(_self.shell.templates.prompt({self: _self, node: _self.pathhandler.current}));
     });
+
+
+    //<section id='getNode'/>
 
     // wiring up pathhandler for navigating repository file system
     _self.pathhandler.getNode = function(path, callback) {
@@ -206,6 +235,9 @@
       _console.log("path to fetch: " + path);
       return getDir(_self.repo.full_name, _self.branch, path, callback);
     };
+
+    //<section id='getChildNodes'/>
+
     _self.pathhandler.getChildNodes = function(node, callback) {
       if(node.isfile) {
         _console.log("it's a file, no children");
@@ -222,7 +254,11 @@
       });
     };
 
-    // supporting functions
+    // Supporting Functions
+    // --------------------
+
+    //<section id='get'/>
+
     function get(resource, args, callback) {
       var url = _self.api + resource;
       if(_self.access_token) {
@@ -241,7 +277,7 @@
       };
       $.ajax(request).done(function(response) {
         _console.log(response.meta);
-        $('#ratelimit').html(_rateLimitTemplate({
+        $('#ratelimit').html(_self.shell.templates.rateLimitTemplate({
           remaining: response.meta["X-RateLimit-Remaining"],
           limit: response.meta["X-RateLimit-Limit"],
           noAuthToken: !_self.access_token
@@ -258,6 +294,8 @@
       })
     }
 
+    //<section id='ensureBranches'/>
+
     function ensureBranches(err, callback) {
       get("repos/" + _self.repo.full_name + "/branches", null, function(branches) {
         if(!branches) {
@@ -267,6 +305,8 @@
         return callback();
       });
     }
+
+    //<section id='setUser'/>
 
     function setUser(user_name, repo_name, err, callback) {
       if(_self.user && _self.user.login === user_name) {
@@ -283,6 +323,8 @@
       });
     }
 
+    //<section id='initializeRepos'/>
+
     function initializeRepos(user, repo_name, err, callback) {
       return getRepos(user.login, function(repos) {
         var repo = getRepo(repo_name, repos);
@@ -295,6 +337,8 @@
         });
       });
     }
+
+    //<section id='getDir'/>
 
     function getDir(repo_full_name, branch, path, callback) {
       if(path && path.length > 1 && path[path.length - 1] === '/') {
@@ -317,11 +361,15 @@
       });
     }
 
+    //<section id='getRepos'/>
+
     function getRepos(userLogin, callback) {
       return get("users/" + userLogin + "/repos", null, function(data) {
         callback(data);
       });
     }
+
+    //<section id='getRepo'/>
 
     function getRepo(repo_name, repos) {
       if(!repos || repos.length == 0) {
@@ -341,6 +389,8 @@
       return repo;
     }
 
+    //<section id='setRepo'/>
+
     function setRepo(repo, err, callback) {
       return getDir(repo.full_name, repo.default_branch, "/", function(node) {
         if(!node) {
@@ -354,6 +404,8 @@
       });
     }
 
+    //<section id='makeNodes'/>
+
     function makeNodes(children) {
       return _.map(children, function(node) {
         return {
@@ -364,6 +416,9 @@
       });
     }
 
+    //<section id='initialize'/>
+
+    // Initializes the Shell either as the authenticated user or the default user *sdether*
     function initialize(access_token) {
       _self.access_token = access_token;
       if(_self.access_token) {
@@ -393,10 +448,14 @@
       }
     }
 
+    //<section id='initializationError'/>
+
     function initializationError(context, msg) {
       _console.log("[" + context + "] failed to initialize: " + msg);
       alert("unable to initialize shell. Encountered a problem talking to github api. Try reloading the page");
     }
+
+    //<section id='initializeUI'/>
 
     function initializeUI() {
       _console.log("activating");
@@ -427,7 +486,8 @@
       _self.shell.onCancel(hideAndDeactivate);
     }
 
-    // initialization & activation
+    //<section id='document.ready'/>
+
     $(document).ready(function() {
       $.ajax({
         url: 'http://josh.claassen.net/github-token',
