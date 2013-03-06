@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html xmlns="http://www.w3.org/1999/html">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
@@ -72,8 +72,15 @@
       </li>
     </ul>
 
-    <p>You will be limited to 60 requests/hour to the API (where each console command may use multipl requests). If you
+    <p>You will be limited to 60 requests/hour to the API (where each console command may use multiple requests). If you
       <a href='http://josh.claassen.net/github'>authenticate via GitHub</a>, you will have a more flexible 5000 requests/hour to play with.
+    </p>
+
+    <h2>Annotated Source</h2>
+
+    <p>The purpose of this tutorial is less about the specific code, but rather how
+      <code>Josh.Shell</code> is wired up to a remote REST API via asynchronous calls to procude an interactive command line interface. Rather than walking through the code line by line, we will explain the flow of the GitHub console and the functions that make it possible, leaving the implementation details to the
+      <a href="docs/githubconsole.html">annotated source code</a>. Throughout the tutorial, functions are linked to their location in the annotated source code.
     </p>
 
     <h2>Application State</h2>
@@ -118,8 +125,110 @@
       <a href="https://github.com/sdether/josh.js/tree/github-authentication-backend">github-authentication-backend</a> branch.
     </p>
 
+    <h2>Initializing the Console</h2>
 
+    <p>In order for us to show the console, we have to have initialized a user, a repository and retrieved it's root directory. Because of authentication, we have two initialization paths,
+      <strong>authenticated</strong> and <strong>unauthenticated</strong>. Both happen via
+      <a href="docs/githubconsole.html#initialize" target="_blank"><code>initialize(access_token)</code></a>
+      <em>(Sidenote: This is called after document.ready by an ajax response that tries to fetch the access token from our OAuth helper application).</em>
+    </p>
+
+    <p>Depending on the existence of an <em>access_token</em>
+      <a href="docs/githubconsole.html#initialize" target="_blank"><code>initialize(access_token)</code></a> will either fetch the current user and initialize a default repo or call
+      <code>setUser</code> for a default user.</p>
+
+    <p>The authenticated initialization looks like this:</p>
+  <pre>
+get("user", null, function(user) {
+  if(!user) {
+    return initializationError("user", "unable able to fetch default user");
+  }
+  _console.log("intializing w/ user '" + user.login + "'");
+  return initializeRepos(user, null,
+    function(msg) {
+      initializationError("repo init", msg);
+    },
+    function(repo) {
+      _self.user = user;
+      initializeUI();
+    }
+  );
+});</pre>
+    <p>All API access goes through a helper function
+      <a href="docs/githubconsole.html#get" target="_blank"><code>get(resource, args, callback)</code></a>, which is responsible constructing the
+      <em>jsonp</em> call and inspecting the response. For simplicity, all error conditions just result in
+      <em>callback</em> being called with null argument instead of a
+      <em>json</em> payload. Also for simplicity, any initialization failure, just bails out via
+      <a href="docs/githubconsole.html#initializationError" target="_blank"><code>initializationError()</code></a>.</p>
+
+    <p>Once we have a user, we can call
+      <a href="docs/githubconsole.html#initializeRepos" target="_blank"><code>initializeRepos(user, repo_name, err, callback)</code></a>, with a null repo_name to fetch all repos for the user and pick the first one as the default one, before setting the authenticated user as the current user and initializing the UI of the shell.
+    </p>
+
+    <p>The unauthenticated flow simply calls
+      <a href="docs/githubconsole.html#setUser" target="_blank"><code>setUser(user_name, repo_name, err, callback)</code></a>, which is the same function we will use to switch users later. This function follows the pattern of providing both an
+      <em>error</em> and
+      <em>success</em> callback, since once the shell is initialized we need to make sure that any action we take on its behalf does result in its callback being called with some value, lest the shell stop functioning. Unlike previous tutorials, we're now doing network requests and those will fail sooner or later. For this reason we need to make sure we always have a quick
+      <em>err</em> callback to stop the current operation and call the callback provided by
+      <code>Josh.Shell</code> on command execution. We also need to make sure that we do not mutate the application state until we are done with all operations that can fail, so that worst case is us reporting to the shell that the operation failed and our current, known good state is preserved.
+    </p>
+
+    <h2>Adding Commands</h2>
+
+    <p>Commands are added via <code>Josh.Shell.SetCommandHandler(cmd,handler)</code> where
+      <em>handler</em> is an object with two properties, <em>exec</em> and
+      <em>completion</em>. The signature of the execution handler is
+      <code>function(cmd, args, callback)</code>. Unlike the callback pattern we used for
+      <code>setUser</code>, Josh functions never have an error handler. Since Josh interacts with the UI, it has no concept of failure -- it has to continue executing. It is up to the caller to deal with errors and transform them into the appropriate UI response. But it still gives us the flexibility to undertake an asynchronous actions, such as calling a remote API and complete the function execution upon the asynchronous return of the remote call.
+    </p>
+
+    <h3><a href="docs/githubconsole.html#cmd.user" target="_blank">user [<em>username</em>]</a></h3>
+
+    <p>The <a href="docs/githubconsole.html#cmd.user" target="_blank"><code>user</code></a> command does not have
+      <code>TAB</code> completion, since doing efficient tab completion against the full set of GitHub users is beyond this tutorial. Instead it expects a valid username to call
+      <a href="docs/githubconsole.html#setUser" target="_blank"><code>setUser(user_name, repo_name, err, callback)</code></a> with and on completion renders the user template with the new current user.
+    </p>
+
+    <p>If called without a <em>username</em>, we simply render user template with the current user.</p>
+
+    <h3><a href="docs/githubconsole.html#cmd.repo" target="_blank">repo [<em>-l | reponame</em>]</a></h3>
+
+    <p>The
+      <a href="docs/githubconsole.html#cmd.repo" target="_blank"><code>repo</code></a> command can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
+      <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
+
+    <p>Given no argument, we simply render the repository template with the current repository</p>
+
+    <p>If the argument is
+      <em>-l</em>, we render the repository list template with the repositories we fetched on user initialization.</p>
+
+    <p>Finally, the argument is used to try and retrieve the repository from the known repositories. If that succeeds, we call
+      <a href="docs/githubconsole.html#setRepo" target="_blank"><code>setRepo(repo, err, callback)</code></a>, which fetches the root directory to initialize the current node of
+      <code>Josh.PathHandler</code> before changing the current repository to the one specified. Upon switching we again render the repository template with the now current repository.
+    </p>
+
+    <p>The completion handler for the command simply calls
+      <code>Josh.Shell.bestMatch</code> with the partial argument and a list of all repository names.
+      <code>bestMatch</code> takes care of creating the completion object with the appropriate argument completion and list of possible choices.
+    </p>
   </section>
+
+  <h3><a href="docs/githubconsole.html#cmd.branch" target="_blank">branch [<em>-l | branchname</em>]</a></h3>
+
+  <p>T can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
+    <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
+
+  <p>Given no argument, the
+    <a href="docs/githubconsole.html#cmd.branch" target="_blank"><code>branch</code></a> command simply prints the current branch name. The
+    <em>-l</em> argument renders a list of all known branches for the current repository, while an actualy branchname as argument will cause the console to change its current branch.</p>
+
+  <p>Showing the list of branches uses <a href="docs/githubconsole.html#ensureBranches" target="_blank"><code>ensureBranches(err, callback)</code></a> to lazily initialize the list of branches from the API.</p>
+
+  <p>The completion handler for the command simply calls
+    <code>Josh.Shell.bestMatch</code> with the partial argument and a list of all repository names.
+    <code>bestMatch</code> takes care of creating the completion object with the appropriate argument completion and list of possible choices.
+  </p>
+
 </div>
 <!--[if !IE]>
 <script>fixScale(document);</script><![endif]-->
