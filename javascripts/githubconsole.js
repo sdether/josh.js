@@ -28,7 +28,7 @@
     // `_self` contains all state variables for the console's operation
     var _self = {
       shell: Josh.Shell({console: _console}),
-      api: "https://api.github.com/"
+      api: "http://josh.claassen.net/github/"
     };
 
     // `Josh.PathHandler` is attached to `Josh.Shell` to provide basic file system navigation.
@@ -56,7 +56,7 @@
     //**templates.rateLimitTemplate**
 
     // Since GitHub rate limits un-authenticated use rather drastically, we render the current rate limit status in the shell so that it is clear that extended experimenting requires authentication.
-    _self.shell.templates.rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(noAuthToken) {%> <a href='http://josh.claassen.net/github'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
+    _self.shell.templates.rateLimitTemplate = _.template("<%=remaining%>/<%=limit%><% if(!authenticated) {%> <a href='http://josh.claassen.net/github/authenticate'>Authenticate with Github to increase your Rate Limit.</a><%}%>");
 
     //**templates.user**
 
@@ -261,10 +261,6 @@
 
     function get(resource, args, callback) {
       var url = _self.api + resource;
-      if(_self.access_token) {
-        args = args || {};
-        args.access_token = _self.access_token;
-      }
       if(args) {
         url += "?" + _.map(args,function(v, k) {
           return k + "=" + v;
@@ -273,24 +269,27 @@
       _console.log("fetching: " + url);
       var request = {
         url: url,
-        dataType: 'jsonp'
+        dataType: 'json',
+        xhrFields: {
+          withCredentials: true
+        }
       };
-      $.ajax(request).done(function(response) {
-        _console.log(response.meta);
-        $('#ratelimit').html(_self.shell.templates.rateLimitTemplate({
-          remaining: response.meta["X-RateLimit-Remaining"],
-          limit: response.meta["X-RateLimit-Limit"],
-          noAuthToken: !_self.access_token
-        }));
-        if(response.meta["X-RateLimit-Remaining"] == 0) {
+      $.ajax(request).done(function(response,status,xhr) {
+        var ratelimit = {
+          remaining: parseInt(xhr.getResponseHeader("X-RateLimit-Remaining")),
+          limit: parseInt(xhr.getResponseHeader("X-RateLimit-Limit")),
+          authenticated: xhr.getResponseHeader('Authenticated') === 'true'
+        };
+        $('#ratelimit').html(_self.shell.templates.rateLimitTemplate(ratelimit));
+        if(ratelimit.remaining == 0) {
           alert("Whoops, you've hit the github rate limit. You'll need to authenticate to continue");
           _self.shell.deactivate();
           return null;
         }
-        if(response.meta.status != 200) {
+        if(status !== 'success') {
           return callback();
         }
-        return callback(response.data);
+        return callback(response);
       })
     }
 
@@ -416,38 +415,6 @@
       });
     }
 
-    //<section id='initialize'/>
-
-    // Initializes the Shell either as the authenticated user or the default user *sdether*
-    function initialize(access_token) {
-      _self.access_token = access_token;
-      if(_self.access_token) {
-        get("user", null, function(user) {
-          if(!user) {
-            return initializationError("user", "unable able to fetch default user");
-          }
-          _console.log("intializing w/ user '" + user.login + "'");
-          return initializeRepos(user, null,
-            function(msg) {
-              initializationError("repo init", msg);
-            },
-            function(repo) {
-              _self.user = user;
-              initializeUI();
-            }
-          );
-        });
-      } else {
-        _console.log("initializing default w/ 'sdether'");
-        setUser("sdether", "josh.js",
-          function(msg) {
-            initializationError("default", msg);
-          },
-          initializeUI
-        );
-      }
-    }
-
     //<section id='initializationError'/>
 
     function initializationError(context, msg) {
@@ -489,18 +456,12 @@
     //<section id='document.ready'/>
 
     $(document).ready(function() {
-      $.ajax({
-        url: 'http://josh.claassen.net/github-token',
-        type: "get",
-        dataType: "json",
-        xhrFields: {
-          withCredentials: true
-        }
-      })
-        .done(function(data) {
-          _console.log(data);
-          initialize(data.access_token);
-        });
+      setUser("sdether", "josh.js",
+        function(msg) {
+          initializationError("default", msg);
+        },
+        initializeUI
+      );
     });
   })(root, $, _);
 })(this, $, _);
