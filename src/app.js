@@ -69,7 +69,7 @@ app.get(/^\/(user|users|repos)(\/.*|$)/, function(req, res) {
   }
   request({
       method: 'get',
-      uri: 'https://api.github.com' + req.path,
+      uri: 'https://api.github.com' + req.path+"?"+qs.stringify(req.query),
       headers: headers
     },
     function(error, response, body) {
@@ -80,6 +80,7 @@ app.get(/^\/(user|users|repos)(\/.*|$)/, function(req, res) {
       res.send(body);
     });
 });
+
 app.get('*', function(req, res) {
   console.log('redirecting: ' + req.path);
   res.redirect("http://sdether.github.com/josh.js/");
