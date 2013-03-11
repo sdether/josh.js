@@ -23,7 +23,7 @@
     };
 
     // Console State
-    // -------------
+    // =============
     //
     // `_self` contains all state variables for the console's operation
     var _self = {
@@ -35,7 +35,7 @@
     _self.pathhandler = new Josh.PathHandler(_self.shell, {console: _console});
 
     // Custom Templates
-    // ----------------
+    // ================
     // `Josh.Shell` uses *Underscore* templates for rendering output to the shell. This console overrides some and adds a couple of new ones for its own commands.
 
     // **templates.prompt**
@@ -112,12 +112,12 @@
     _self.shell.templates.branches_error = _.template("Unable to load branch list: <%=msg%>");
 
     // Adding Commands to the Console
-    // ------------------------------
+    // ==============================
 
     //<section id='cmd.user'/>
 
     // user [ username ]
-    // ===============
+    // -----------------
 
     // The `user` command is used to display information about the current user or switch between github users.
     _self.shell.setCommandHandler("user", {
@@ -150,7 +150,7 @@
     //<section id='cmd.repo'/>
 
     // repo [ -l | reponame ]
-    // ======================
+    // ----------------------
 
     // The `repo` command is used to display information about the current repo or switch to. It
     _self.shell.setCommandHandler("repo", {
@@ -206,7 +206,7 @@
     //<section id='cmd.branch'/>
 
     // branch [ -l | branchname ]
-    // ==========================
+    // --------------------------
 
     // The `branch` command is used to switch or list branches for the current repository.
     _self.shell.setCommandHandler("branch", {
@@ -269,11 +269,13 @@
       callback(_self.shell.templates.prompt({self: _self, node: _self.pathhandler.current}));
     });
 
+    // Wiring up PathHandler
+    // =====================
 
     //<section id='getNode'/>
 
     // getNode
-    // =======
+    // -------
 
     // `getNode` is required by `Josh.PathHandler` to provide filesystem behavior. Given a path, it is expected to return
     // a pathnode or null;
@@ -294,7 +296,7 @@
     //<section id='getChildNodes'/>
 
     // getChildNodes
-    // =============
+    // -------------
 
     // `getChildNodes` is the second function implementation required for `Josh.PathHandler`. Given a pathnode, it returns
     // a list of child pathnodes. This is used by `Tab` completion to resolve a partial path, after first resolving the
@@ -322,12 +324,12 @@
     };
 
     // Supporting Functions
-    // --------------------
+    // ====================
 
     //<section id='get'/>
 
     // get
-    // ===
+    // ---
 
     // This function is responsible for all API requests, given a partial API path, `resource`, and an query argument object,
     // `args`.
@@ -375,7 +377,7 @@
     //<section id='ensureBranches'/>
 
     // ensureBranches
-    // ==============
+    // --------------
 
     // This function lazily fetches the branches for the current repo from the API.
     function ensureBranches(err, callback) {
@@ -391,7 +393,7 @@
     //<section id='setUser'/>
 
     // setUser
-    // =======
+    // -------
 
     // This function fetches the specified user and initializes a repository to the provided value (which may be null).
     // one fetched by `initialzeRepos`.
@@ -413,7 +415,7 @@
     //<section id='initializeRepos'/>
 
     // initalizeRepos
-    // ==============
+    // --------------
 
     // This function first fetches all repos for the given user from the API and then sets the current repo to the provided
     // value (which may be null).
@@ -433,7 +435,7 @@
     //<section id='getDir'/>
 
     // getDir
-    // ======
+    // ------
 
     // This function function fetches the directory listing for a path on a given repo and branch.
     function getDir(repo_full_name, branch, path, callback) {
@@ -469,7 +471,7 @@
     //<section id='getRepos'/>
 
     // getRepos
-    // ========
+    // --------
 
     // This function fetches all repositories for a given user.
     function getRepos(userLogin, callback) {
@@ -481,7 +483,7 @@
     //<section id='getRepo'/>
 
     // getRepo
-    // =======
+    // -------
 
     // This function tries to match a repository from the given list of known repositories. Should `repo_name` be null,
     // the first repository in `repos` is returned.
@@ -506,7 +508,7 @@
     //<section id='setRepo'/>
 
     // setRepo
-    // =======
+    // -------
 
     // This function fetches the root directory for the specified repository and initializes the current repository
     // state.
@@ -527,7 +529,7 @@
     //<section id='buildAbsolutePath'/>
 
     // buildAbsolutePath
-    // =================
+    // -----------------
 
     // This function resolves a path to an absolute path given a current node.
     function buildAbsolutePath(path, current, callback) {
@@ -539,7 +541,6 @@
       // contain `.` or `..`, path operators that the github API does not understand, the resulting value is fed back
       // into `buildAbsolutePath`.
       if(parts[0] === '..' ) {
-        // parent relative
         var parentParts = _.filter(current.path.split("/"), function(x) {
           return x;
         });
@@ -551,8 +552,6 @@
       // be relative and an absolute path can be constructed by combining the path and `current`. Once again, the value
       // isfed back into `buildAbsolutePath` for final resolution.
       if(parts[0] === '.' || parts[0] !== '') {
-
-        // relative
         path = current.path+"/"+path;
         return buildAbsolutePath(path, _self.root, callback);
       }
@@ -576,7 +575,7 @@
     //<section id='makeNodes'/>
 
     // makeNodes
-    // =========
+    // ---------
 
     // This method builds child pathnodes from the directory information returned by getDir.
     function makeNodes(children) {
@@ -589,10 +588,13 @@
       });
     }
 
+    // UI setup and initialization
+    // ===========================
+
     //<section id='initializationError'/>
 
     // initializationError
-    // ===================
+    // -------------------
 
     // This function is a lazy way with giving up if some request failed during intialization, forcing the user
     // to reload to retry.
@@ -604,7 +606,7 @@
     //<section id='initializeUI'/>
 
     // intializeUI
-    // ===========
+    // -----------
 
     // After a current user and repo have been set, this function initializes the UI state to allow the shell to be
     // shown and hidden.
