@@ -111,13 +111,13 @@
       <code>Josh.PathHandler</code>'s area of applicability.</p>
 
     <p>The user object comes from:</p>
-    <pre>GET /users/:user</pre>
+    <pre><code>GET /users/:user</code></pre>
     <p>We never fetch an individual repository, instead opting to fetch all for the current user at user initialization via:</p>
-    <pre>GET /users/:user/repos</pre>
+    <pre><code>GET /users/:user/repos</code></pre>
     <p>We do the same for branches, fetching all, lazily, once we need to list or autocomplete them:</p>
-    <pre>GET /repos/:owner/:repo/branches</pre>
+    <pre><code>GET /repos/:owner/:repo/branches</code></pre>
     <p>Finally, we fetch the current directory via</p>
-    <pre>GET /repos/:owner/:repo/contents/:path</pre>
+    <pre><code>GET /repos/:owner/:repo/contents/:path</code></pre>
     <p>This is done for the root during repo initialization, and for path completion and <code>cd</code> on demand.</p>
 
     <p> The API returns
@@ -128,7 +128,7 @@
     <h2>Initializing the Console</h2>
 
     <p>In order for us to show the console, we have to have initialized a user, a repository and retrieved it's root directory. This is done after
-      <a href="docs/githubconsole.html#document.ready" target="_blank"><code>document.ready</code></a></p>
+      <a href="docs/githubconsole.html#document.ready" target="docs"><code>document.ready</code></a></p>
     <pre><code>$(document).ready(function() {
       setUser("sdether", "josh.js",
         function(msg) {
@@ -139,7 +139,7 @@
     });</code></pre>
 
     <p>We call
-      <a href="docs/githubconsole.html#setUser" target="_blank"><code>setUser(user_name, repo_name, err, callback)</code></a> for
+      <a href="docs/githubconsole.html#setUser" target="docs"><code>setUser(user_name, repo_name, err, callback)</code></a> for
       <em>sdether</em> and
       <em>josh.js</em>, before setting the authenticated user as the current user and initializing the UI of the shell.
     </p>
@@ -165,14 +165,14 @@
     </p>
 
     <p>All API access goes through a helper function
-      <a href="docs/githubconsole.html#get" target="_blank"><code>get(resource, args, callback)</code></a>, which is responsible for constructing the
+      <a href="docs/githubconsole.html#get" target="docs"><code>get(resource, args, callback)</code></a>, which is responsible for constructing the
       <em>json</em> call and inspecting the response. For simplicity, all error conditions just result in
       <em>callback</em> being called with null instead of a
       <em>json</em> payload. Also for simplicity, any initialization failure, just bails out via
-      <a href="docs/githubconsole.html#initializationError" target="_blank"><code>initializationError()</code></a>.</p>
+      <a href="docs/githubconsole.html#initializationError" target="docs"><code>initializationError()</code></a>.</p>
 
     <p>Once we have a user, we can call
-      <a href="docs/githubconsole.html#initializeRepos" target="_blank"><code>initializeRepos(user, repo_name, err, callback)</code></a>.
+      <a href="docs/githubconsole.html#initializeRepos" target="docs"><code>initializeRepos(user, repo_name, err, callback)</code></a>.
     </p>
 
     <h2>Adding Commands</h2>
@@ -193,19 +193,19 @@
       <code>setUser</code>, Josh functions do not have a separate error handler. Since Josh interacts with the UI, it has no concept of failure -- it has to execute the callback to continue executing. It is up to the caller to deal with errors and transform them into the appropriate UI response. But it still gives us the flexibility to undertake an asynchronous actions, such as calling a remote API and complete the function execution upon the asynchronous return of the remote call.
     </p>
 
-    <h3><a href="docs/githubconsole.html#cmd.user" target="_blank">user [<em>username</em>]</a></h3>
+    <h3><a href="docs/githubconsole.html#cmd.user" target="docs">user [<em>username</em>]</a></h3>
 
-    <p>The <a href="docs/githubconsole.html#cmd.user" target="_blank"><code>user</code></a> command does not have
+    <p>The <a href="docs/githubconsole.html#cmd.user" target="docs"><code>user</code></a> command does not have
       <code>TAB</code> completion, since doing efficient tab completion against the full set of GitHub users is beyond this tutorial. Instead it expects a valid username to call
-      <a href="docs/githubconsole.html#setUser" target="_blank"><code>setUser(user_name, repo_name, err, callback)</code></a> with and on completion renders the user template with the new current user.
+      <a href="docs/githubconsole.html#setUser" target="docs"><code>setUser(user_name, repo_name, err, callback)</code></a> with and on completion renders the user template with the new current user.
     </p>
 
     <p>If called without a <em>username</em>, we simply render user template with the current user.</p>
 
-    <h3><a href="docs/githubconsole.html#cmd.repo" target="_blank">repo [<em>-l | reponame</em>]</a></h3>
+    <h3><a href="docs/githubconsole.html#cmd.repo" target="docs">repo [<em>-l | reponame</em>]</a></h3>
 
     <p>The
-      <a href="docs/githubconsole.html#cmd.repo" target="_blank"><code>repo</code></a> command can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
+      <a href="docs/githubconsole.html#cmd.repo" target="docs"><code>repo</code></a> command can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
       <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
 
     <p>Given no argument, we simply render the repository template with the current repository</p>
@@ -214,7 +214,7 @@
       <em>-l</em>, we render the repository list template with the repositories we fetched on user initialization.</p>
 
     <p>Finally, the argument is used to try and retrieve the repository from the known repositories. If that succeeds, we call
-      <a href="docs/githubconsole.html#setRepo" target="_blank"><code>setRepo(repo, err, callback)</code></a>, which fetches the root directory to initialize the current node of
+      <a href="docs/githubconsole.html#setRepo" target="docs"><code>setRepo(repo, err, callback)</code></a>, which fetches the root directory to initialize the current node of
       <code>Josh.PathHandler</code> before changing the current repository to the one specified. Upon switching we again render the repository template with the now current repository.
     </p>
 
@@ -223,18 +223,18 @@
       <code>bestMatch</code> takes care of creating the completion object with the appropriate argument completion and list of possible choices.
     </p>
 
-  <h3><a href="docs/githubconsole.html#cmd.branch" target="_blank">branch [<em>-l | branchname</em>]</a></h3>
+  <h3><a href="docs/githubconsole.html#cmd.branch" target="docs">branch [<em>-l | branchname</em>]</a></h3>
 
   <p>T can either show information about the current repository, change the current repository or list all repositories belonging to the user. It also provides
     <code>TAB</code> completion of partial repository names against the repositories of the current user.</p>
 
   <p>Given no argument, the
-    <a href="docs/githubconsole.html#cmd.branch" target="_blank"><code>branch</code></a> command simply prints the current branch name. The
+    <a href="docs/githubconsole.html#cmd.branch" target="docs"><code>branch</code></a> command simply prints the current branch name. The
     <em>-l</em> argument renders a list of all known branches for the current repository, while an actualy branchname as argument will cause the console to change its current branch.
   </p>
 
   <p>Showing the list of branches uses
-    <a href="docs/githubconsole.html#ensureBranches" target="_blank"><code>ensureBranches(err, callback)</code></a> to lazily initialize the list of branches from the API.
+    <a href="docs/githubconsole.html#ensureBranches" target="docs"><code>ensureBranches(err, callback)</code></a> to lazily initialize the list of branches from the API.
   </p>
 
   <p>The completion handler for the command simply calls
@@ -243,7 +243,7 @@
   </p>
 
     <h2>Wiring up Josh.PathHandler</h2>
-    <p><code>PathHandler</code> provides unix filepath handling. This works by abstracting the filesystem into two operations, <a href="docs/githubconsole.html#getNode" target="_blank"><code>getNode(path, callback)</code></a> and <a href="docs/githubconsole.html#getChildNodes" target="_blank"><code>getChildNodes(node, callback)</code></a>. The former returns a file node given a path string while the latter returns file nodes for all children of a given node. With these two all tree operations including <code>TAB</code> completion can be accomplished by <code>PathHandler</code>.</p>
+    <p><code>PathHandler</code> provides unix filepath handling. This works by abstracting the filesystem into two operations, <a href="docs/githubconsole.html#getNode" target="docs"><code>getNode(path, callback)</code></a> and <a href="docs/githubconsole.html#getChildNodes" target="docs"><code>getChildNodes(node, callback)</code></a>. The former returns a file node given a path string while the latter returns file nodes for all children of a given node. With these two all tree operations including <code>TAB</code> completion can be accomplished by <code>PathHandler</code>.</p>
     <p>A file node is an opaque object in which we can track any file state we want but has to have two properties:</p>
     <pre><code>{
   name: 'localname',
