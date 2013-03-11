@@ -6,6 +6,7 @@
   <title>Josh.js by sdether</title>
   <link rel="stylesheet" href="stylesheets/styles.css">
   <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <link rel="stylesheet" href="stylesheets/tomorrow-night.css">
   <script src="javascripts/respond.js"></script>
   <!--[if lt IE 9]>
   <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
@@ -19,6 +20,8 @@
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
   <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+  <script src="javascripts/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
   <script>Josh = {Debug: true };</script>
   <script src="javascripts/killring.js"></script>
   <script src="javascripts/history.js"></script>
@@ -97,9 +100,9 @@
       <code>Josh.Shell</code> uses local storage to store a history of the commands that you have typed. By default this is keyed with
       <em>josh.history</em>. That history is available to all instances of the shell on your site. For this tutorial, we want to make sure we have our own copy, so we don't get commands from other tutorials and examples, so we need to create a history object with its own key:
     </p>
-    <pre>var history = new Josh.History({ key: 'helloworld.history'});</pre>
+    <pre><code>var history = new Josh.History({ key: 'helloworld.history'});</code></pre>
     <p>Now we can create a Shell instance with that history:</p>
-    <pre>var shell = Josh.Shell({history: history});</pre>
+    <pre><code>var shell = Josh.Shell({history: history});</code></pre>
     <p>Now the shell exists but has not yet been activated.</p>
 
     <p><em>Note on how the shell attaches to its UI elements:</em> By default
@@ -112,11 +115,11 @@
     <p>The default prompt for Josh is
       <strong>jsh$</strong>. Let's create a prompt instead that keeps track of how many times it has been shown:
     </p>
-        <pre>var promptCounter = 0;
+        <pre><code>var promptCounter = 0;
 shell.onNewPrompt(function(callback) {
     promptCounter++;
     callback("[" + promptCounter + "] $ ");
-});</pre>
+});</code></pre>
     <p>
       <code>onNewPrompt</code> is called every time Josh needs to re-render the prompt. This happens usually a command is executed, but can also happen on tab completion, when a list of possible completions is shown.
       <code>onNewPrompt</code> expects a function that accepts a callback as its only argument. Josh will not continue until the callback has been called with an html string to display. This allows the prompt to rendered as part of an asynchronous action. For our example, we just increment the promptCounter and send back a simple string with the counter.
@@ -131,7 +134,7 @@ shell.onNewPrompt(function(callback) {
       <li><code>clear</code> - clear the console (i.e. remove all children from <code>div#shell-view</code></li>
     </ul>
     <p>Let's add a new command called hello with tab completion:</p>
-        <pre>shell.setCommandHandler("hello", {
+        <pre><code>shell.setCommandHandler("hello", {
     exec: function(cmd, args, callback) {
         var arg = args[0] || '';
         var response = "who is this " + arg + " you are talking to?";
@@ -147,7 +150,7 @@ shell.onNewPrompt(function(callback) {
     completion: function(cmd, arg, line, callback) {
         callback(shell.bestMatch(arg, ['world', 'josh']))
     }
-});</pre>
+});</code></pre>
     <p>To add a command, simply call <code>shell.setCommandHandler</code> and provide it at least an
       <code>exec</code> handler, and optionally a <code> completion</code> handler.</p>
 
@@ -159,10 +162,10 @@ shell.onNewPrompt(function(callback) {
     <p>
       <code>completion</code> expects a function that takes the current command, the current argument being completed, the complete line (since the cursor may not be at the tail) and a callback that MUST be called either with a completion data structure. The format of this data structure is:
     </p>
-        <pre>{
+        <pre><code>{
   completion: {string to append to current argument},
   suggestions: [{array of possible completions},...]
-}</pre>
+}</code></pre>
     <p>Here are some expected completions:</p>
     <ul>
       <li><code>hello &lt;TAB&gt;</code> => <code>{completion:null,suggestions:['world', 'josh']}</code></li>
@@ -178,7 +181,7 @@ shell.onNewPrompt(function(callback) {
     <p>Now that we've added our custom behavior to
       <code>Josh.Shell</code>, all we have to do is activate the shell to render the prompt and start capturing all keystrokes via readline (i.e. if you want the shell to only capture keys while the shell has focus, it is up to you to write focus and blur code to activate and deactivate the shell.)
     </p>
-    <pre>shell.activate();</pre>
+    <pre><code>shell.activate();</code></pre>
     <p>And that's all there is to getting a custom Bash-like shell in your web page.</p>
   </section>
 </div>

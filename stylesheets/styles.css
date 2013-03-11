@@ -568,7 +568,7 @@ code {
     border-radius: 2px;
 }
 
-a {
+a code {
     text-decoration: underline;
     color: #efefef;
 }
