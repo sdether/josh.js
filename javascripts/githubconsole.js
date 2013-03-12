@@ -281,16 +281,35 @@
     // a pathnode or null;
     _self.pathhandler.getNode = function(path, callback) {
       _console.log("looking for node at: " + path);
+
+      // If the given path is empty, just return the current pathnode.
       if(!path) {
         return callback(_self.pathhandler.current);
       }
+      var parts = getPathParts(path);
 
-      // `buildAbsolutePath` is called recursively to turn `path` into an absolute path that can be resolved against the
-      // github API with `getDir`.
-      buildAbsolutePath(path, _self.pathhandler.current, function(absPath) {
-        _console.log("path to fetch: " + absPath);
-        return getDir(_self.repo.full_name, _self.branch, absPath, callback);
+      // If the first part of path parts isn't empty, the path is a relative path, which can be turned into an
+      // *absolutish* path by pre-pending the parts of the current pathnode.
+      if(parts[0] !== '') {
+        parts = getPathParts(_self.pathhandler.current.path).concat(parts);
+      }
+
+      // At this point the path is *absolutish*, i.e. looks absolute, but all `.` and `..` mentions need to removed and
+      // resolved before it is truly absolute.
+      var resolved = [];
+      _.each(parts, function(x) {
+        if(x === '.') {
+          return;
+        }
+        if(x === '..') {
+          resolved.pop();
+        } else {
+          resolved.push(x);
+        }
       });
+      var absolute = resolved.join('/');
+      _console.log("path to fetch: " + absolute);
+      return getDir(_self.repo.full_name, _self.branch, absolute, callback);
     };
 
     //<section id='getChildNodes'/>
@@ -348,7 +367,7 @@
           withCredentials: true
         }
       };
-      $.ajax(request).done(function(response,status,xhr) {
+      $.ajax(request).done(function(response, status, xhr) {
 
         // Every response from the API includes rate limiting headers, as well as an indicator injected by the API proxy
         // whether the request was done with authentication. Both are used to display request rate information and a
@@ -526,50 +545,18 @@
       });
     }
 
-    //<section id='buildAbsolutePath'/>
+    //<section id='getPathParts'/>
 
-    // buildAbsolutePath
-    // -----------------
+    // getPathParts
+    // ------------
 
-    // This function resolves a path to an absolute path given a current node.
-    function buildAbsolutePath(path, current, callback) {
-      _console.log("resolving path: "+path);
+    // This function splits a path on `/` and removes any empty trailing element.
+    function getPathParts(path) {
       var parts = path.split("/");
-
-      // If the first part of the path is `..`, `current` is used to determine the parent path and construct an absolute
-      // path from the combination of the parent path and the remainder of `path`. Since this compoint path may still
-      // contain `.` or `..`, path operators that the github API does not understand, the resulting value is fed back
-      // into `buildAbsolutePath`.
-      if(parts[0] === '..' ) {
-        var parentParts = _.filter(current.path.split("/"), function(x) {
-          return x;
-        });
-        path = "/" + parentParts.slice(0, parentParts.length - 1).join('/') + "/" + parts.slice(1).join("/");
-        return buildAbsolutePath(path, _self.root, callback);
+      if(parts[parts.length - 1] === '') {
+        return parts.slice(0, parts.length - 1);
       }
-
-      // If the first parht of the path is either a `.` or not empty (i.e. the path had started with a `/`, the path must
-      // be relative and an absolute path can be constructed by combining the path and `current`. Once again, the value
-      // isfed back into `buildAbsolutePath` for final resolution.
-      if(parts[0] === '.' || parts[0] !== '') {
-        path = current.path+"/"+path;
-        return buildAbsolutePath(path, _self.root, callback);
-      }
-
-      // At this point the path looks absolute, but all `.` and `..` mentions need to removed and resolved before a truly
-      // absolute path can be returned.
-      var resolved = [];
-      _.each(parts, function(x) {
-        if(x === '.') {
-          return;
-        }
-        if(x === '..') {
-          resolved.pop();
-        } else {
-          resolved.push(x);
-        }
-      });
-      return callback(resolved.join('/'));
+      return parts;
     }
 
     //<section id='makeNodes'/>
@@ -577,7 +564,7 @@
     // makeNodes
     // ---------
 
-    // This method builds child pathnodes from the directory information returned by getDir.
+    // This function builds child pathnodes from the directory information returned by getDir.
     function makeNodes(children) {
       return _.map(children, function(node) {
         return {
@@ -651,4 +638,5 @@
       );
     });
   })(root, $, _);
-})(this, $, _);
+})
+  (this, $, _);

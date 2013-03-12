@@ -249,7 +249,16 @@
   name: 'localname',
   path: '/full/path/to/localname'
 }</code></pre>
-  <p><code>PathHandler</code> tracks the current directory/file node in <code>PathHandler.current</code>. Access to the current node is useful in implementing relative path handling in getNode.</p>
+  <p><a href="docs/githubconsole.html#getNode" target="docs"><code>getNode</code></a> is responsible for fetching the appropriate directory from the API either by relative or absolute path. A path is considered relative if it lacks a leading <code>/</code>. <code>PathHandler</code> tracks the current directory/file node in <code>PathHandler.current</code> which is used to convert a relative path to an <em>absolutish</em> path. Since we also support the standard file system <code>.</code> and <code>..</code> symbols and the github API does not, we then need to take the <em>absolutish</em> path and resolve these symbols before passing the resulting absolute path to <a href="docs/githubconsole.html#getDir" target="docs"><code>getDir(repo_full_name, branch, path, callback)</code></a>.</p>
+  <p>It is the job of <a href="docs/githubconsole.html#getDir" target="docs"><code>getDir</code></a> to fetch a directory node via <code>GET /repos/:owner/:repo/contents/:path</code>. This API call returns either an array of file objects for a directory or a file object in case the path points directly at a file. We only care about directories for completion and <code>cd</code>, <code>ls</code>, <em>etc.</em> so we ignore file results and build a pathnode for the directory like this:</p>
+  <pre><code>var node = {
+  name: _.last(_.filter(path.split("/"), function(x) { return x; })) || "",
+  path: path,
+  children: data
+};</code></pre>
+  <p>where <strong>name</strong> is set to the last segment in the path and <strong>children</strong> stores the actual API results (which are lazily converted to childNodes for completion by function <a href="docs/githubconsole.html#makeNodes" target="docs"><code>makeNodes(children)</code></a></p>
+
+  <h2>Putting it all together</h2>
   </section>
 
 </div>
