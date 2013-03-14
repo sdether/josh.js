@@ -125,6 +125,11 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
+**0.2.8** -- 2013/03/13
+* Added handling of . and .. in Josh.PathHandler.pathcompletionhandler, so that a trailing .. completes to ../ and . to ./
+* Removed the hardcoded **strong** in the input template, making it a span instead so it can be styled via css instead.
+* The prompt value itself is now assumed to be html instead of plain text, allowing for richer formatting without changing the input template.
+
 **0.2.7** -- 2013/02/13
 * Removed all html used for Shell UI generation from config to `Shell.templates`, so that they can easily be customized (see: [Issue 11](https://github.com/sdether/josh.js/issues/11 )
 * Removed `PathHandler.templates`. PathHandler now attches its templates to `Shell.templates` as well

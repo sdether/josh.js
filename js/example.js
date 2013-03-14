@@ -150,9 +150,9 @@
     $(document).ready(function() {
 
       // The default name for the div the shell uses as its container is `shell-panel`, although that can be changed via
-      // the shell config parameter `shell-view-id`. The `Shell` display model relies on a div to contain a 'view'. The
-      // acts as the view-port, i.e. the visible portion of the shell content, while the view is appended to and
-      // scrolled up as new content is added.
+      // the shell config parameter `shell-panel-id`. The `Shell` display model relies on a 'panel' to contain a 'view'.
+      // The 'panel' acts as the view-port, i.e. the visible portion of the shell content, while the 'view' is appended
+      // to and scrolled up as new content is added.
       var $consolePanel = $('#shell-panel');
 
       // We use **jquery-ui**'s `resizable` to let us drag the bottom edge of the console up and down.
@@ -170,7 +170,7 @@
         _console.log("activating shell");
         if(event.keyCode == 126) {
           event.preventDefault();
-          shell.activate();
+      shell.activate();
           $consolePanel.slideDown();
           $consolePanel.focus();
         }

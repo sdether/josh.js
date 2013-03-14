@@ -94,6 +94,12 @@ var Josh = Josh || {};
       var lastPathSeparator = arg.lastIndexOf("/");
       var parent = arg.substr(0, lastPathSeparator + 1);
       partial = arg.substr(lastPathSeparator + 1);
+      if(partial === '..' || partial === '.') {
+        return callback({
+          completion: '/',
+          suggestions: []
+        });
+      }
       _console.log("completing children via parent '" + parent+"'  w/ partial '"+partial+"'");
       return self.getNode(parent, function(node) {
         if(!node) {
