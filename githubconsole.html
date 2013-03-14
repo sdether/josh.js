@@ -53,12 +53,12 @@
     <h1>Github Console</h1>
 
     <p>This tutorial expands on the
-      <a href="quakeconsole.html">Quake Console</a> tutorial by using the GitHub REST API instead of a faked filesystem. how to wire up a console that uses a remote API.
+      <a href="quakeconsole.html">Quake Console</a> tutorial by using the GitHub REST API instead of a faked filesystem. The purpose of the tutorial is to show how to wire up <code>Josh.PathHandler</code> and custom commands to a remote API.
     </p>
 
     <h2>Try out the Console</h2>
 
-    <p>Type <code>~</code> to activate the shell we will be building in this tutorial.</p>
+    <p>Type <code>~</code> to activate the shell we will be discussed belowl.</p>
 
     <p>You can explore the current repository's file system via the standard <code>ls</code> and
       <code>cd</code> commands as well as take advantage of path <code>TAB</code> completion. Additional commands are:
@@ -75,7 +75,7 @@
       </li>
     </ul>
 
-    <p>You will be limited to 60 requests/hour to the API (where each console command may use multiple requests). If you
+    <p>You will be limited to 60 requests/hour by the API (where each console command may use multiple requests). If you
       <a href='http://josh.claassen.net/github/authenticate'>authenticate via GitHub</a>, you will have a more flexible 5000 requests/hour to play with.
     </p>
 
@@ -88,9 +88,9 @@
 
     <h2>Application State</h2>
 
-    <p>The console is designed to always be in a repository, so that there is no state in which commands like
+    <p>The console is designed to always be in the context of a repository, so that there is no state in which commands like
       <code>ls</code> are not available. It initializes with the
-      <code>sdether/josh.js</code> repository and after this the user can switch users, repositories and branch, while always staying in the context of some repository. That means that at any point in time, we will have a current user object, a list of all that user's repositories, and a current directory on the current branch as state. Changing users picks a default repository and branch to keep that state populated. Branches and current directory information are loaded on demand.
+      <code>sdether/josh.js</code> repository and after this the user can switch users, repositories and branches, while always staying in the context of some repository. That means that at any point in time, we will have a current user object, a list of all that user's repositories, and a current directory on the current branch as state. Changing users picks a default repository and branch to keep that state populated. Branches and current directory information are loaded on demand.
     </p>
     <p>The available state looks like this:</p>
     <pre><code>{
@@ -114,14 +114,14 @@
     <pre><code>GET /users/:user</code></pre>
     <p>We never fetch an individual repository, instead opting to fetch all at user initialization via:</p>
     <pre><code>GET /users/:user/repos</code></pre>
-    <p>We do the same for branches, fetching all, lazily, once we need to list or auto-complete or list them:</p>
+    <p>We do the same for branches, fetching all, lazily, once we need to auto-complete or list them:</p>
     <pre><code>GET /repos/:owner/:repo/branches</code></pre>
     <p>Finally, we fetch the current directory via</p>
     <pre><code>GET /repos/:owner/:repo/contents/:path</code></pre>
     <p>This is done for the root during repo initialization, and for path completion, <code>cd</code>, <code>ls</code>, <em>etc.</em> on demand.</p>
 
     <p> The API returns
-      <em>json</em>, which is perfect for us as well, but it is rather drastically rate limited without authentication. I.e. without authentication you will be limited to 60 requests per hour, while authenticated requests get 5000. For this reason, we proxy all github calls through a simple node.js application that can handle oauth to optionally authenticate the use of this console. This application is outside the scope of the tutorial, but the code can be found on the josh.js
+      <em>json</em>, which is perfect for us as well, but it is rather drastically rate limited without authentication. I.e. without authentication you will be limited to 60 requests per hour, while with authentication the limit is 5000 per hour. For this reason, we proxy all github calls through a simple node.js application that can handle oauth to optionally authenticate the use of this console. This application is outside the scope of the tutorial, but the code can be found on the josh.js
       <a href="https://github.com/sdether/josh.js/tree/github-authentication-backend">github-authentication-backend</a> branch.
     </p>
 
@@ -161,17 +161,57 @@
       <em>error</em> and
       <em>success</em> callback, since once the shell is initialized we need to make sure that any action we take on its behalf does result in its callback being called with some value, lest the shell stop functioning. Unlike previous tutorials, we're now doing network requests and those will fail sooner or later. For this reason we need to make sure we always have a quick
       <em>err</em> callback to stop the current operation and call the callback provided by
-      <code>Josh.Shell</code> on command execution. We also need to make sure that we do not mutate the application state until we are done with all operations that can fail, so that worst case is us reporting to the shell that the operation failed and our current, known good state is preserved.
+      <code>Josh.Shell</code> on command execution. We also need to make sure that we do not mutate the application state until we are done with all operations that can fail, so that the worst case is us reporting to the shell that the operation failed while our current, known good state is preserved.
     </p>
 
     <p>All API access goes through a helper function
       <a href="docs/githubconsole.html#get" target="docs"><code>get(resource, args, callback)</code></a>, which is responsible for constructing the
       <em>json</em> call and inspecting the response. For simplicity, all error conditions just result in
       <em>callback</em> being called with null instead of a
-      <em>json</em> payload. Also for simplicity, any initialization failure, just bails out via
-      <a href="docs/githubconsole.html#initializationError" target="docs"><code>initializationError()</code></a>.</p>
+      <em>json</em> payload.</p>
+      <pre><code>function get(resource, args, callback) {
+  var url = _self.api + resource;
+  if(args) {
+    url += "?" + _.map(args,function(v, k) { return k + "=" + v; }).join("&");
+  }
+  var request = {
+    url: url,
+    dataType: 'json',
+    xhrFields: {
+      withCredentials: true
+    }
+  };
+  $.ajax(request).done(function(response, status, xhr) {
 
-    <p>Once we have a user, we can call
+    // Every response from the API includes rate limiting headers, as well as an
+    // indicator injected by the API proxy whether the request was done with
+    // authentication. Both are used to display request rate information and a
+    // link to authenticate, if required.
+    var ratelimit = {
+      remaining: parseInt(xhr.getResponseHeader("X-RateLimit-Remaining")),
+      limit: parseInt(xhr.getResponseHeader("X-RateLimit-Limit")),
+      authenticated: xhr.getResponseHeader('Authenticated') === 'true'
+    };
+    $('#ratelimit').html(_self.shell.templates.rateLimitTemplate(ratelimit));
+    if(ratelimit.remaining == 0) {
+      alert("Whoops, you've hit the github rate limit. You'll need to authenticate to continue");
+      _self.shell.deactivate();
+      return null;
+    }
+
+    // For simplicity, this tutorial trivially deals with request failures by
+    //just returning null from this function via the callback.
+    if(status !== 'success') {
+      return callback();
+    }
+    return callback(response);
+  })
+}</code></pre>
+    <p>Most of this function is actually devoted to CORS and rate limiting handling, which is unique to us calling the GitHub API via a proxy located on another server. When dealing with your own API, calls will likely just be <code>$.getJSON()</code>
+      </p>
+    <p>
+      Also for simplicity, any initialization failures, just bail out via
+      <a href="docs/githubconsole.html#initializationError" target="docs"><code>initializationError()</code></a>. Once we have a user, we can call
       <a href="docs/githubconsole.html#initializeRepos" target="docs"><code>initializeRepos(user, repo_name, err, callback)</code></a>.
     </p>
 
@@ -190,14 +230,14 @@
   }
 });</code></pre>
     <p>Unlike the callback pattern we used for
-      <code>setUser</code>, Josh functions do not have a separate error handler. Since Josh interacts with the UI, it has no concept of failure -- it has to execute the callback to continue executing. It is up to the caller to deal with errors and transform them into the appropriate UI response. But it still gives us the flexibility to undertake an asynchronous actions, such as calling a remote API and complete the function execution upon the asynchronous return of the remote call.
+      <code>setUser</code>, Josh functions do not have a separate error handler. Since Josh interacts with the UI, it has no concept of failure -- it has to execute the callback to continue executing. It is up to the caller to deal with errors and transform them into the appropriate UI response. But it still gives us the flexibility to undertake asynchronous actions, such as calling a remote API and complete the function execution upon asynchronous callback from the remote call.
     </p>
 
     <h3><a href="docs/githubconsole.html#cmd.user" target="docs">user [<em>username</em>]</a></h3>
 
     <p>The <a href="docs/githubconsole.html#cmd.user" target="docs"><code>user</code></a> command does not have
       <code>TAB</code> completion, since doing efficient tab completion against the full set of GitHub users is beyond this tutorial. Instead it expects a valid username for
-      <a href="docs/githubconsole.html#setUser" target="docs"><code>setUser(user_name, repo_name, err, callback)</code></a> and on completion renders the user template with the new current user.
+      <a href="docs/githubconsole.html#setUser" target="docs"><code>setUser(user_name, repo_name, err, callback)</code></a> and renders the user template with the new current user.
     </p>
 
     <p>If called without a <em>username</em>, we simply render the user template with the current user.</p>
@@ -213,7 +253,7 @@
     <p>If the argument is
       <em>-l</em>, we render the repository list template with the repositories we fetched on user initialization.</p>
 
-    <p>Finally, the argument is used to try and retrieve the repository from the known repositories. If that succeeds, we call
+    <p>Finally, the argument is used to try and look up the repository from the known repositories list. If that succeeds, we call
       <a href="docs/githubconsole.html#setRepo" target="docs"><code>setRepo(repo, err, callback)</code></a>, which fetches the root directory to initialize the current node of
       <code>Josh.PathHandler</code> before changing the current repository to the one specified. Upon switching we again render the repository template with the now current repository.
     </p>
@@ -236,12 +276,12 @@
     <a href="docs/githubconsole.html#ensureBranches" target="docs"><code>ensureBranches(err, callback)</code></a> to lazily initialize the list of branches from the API.
   </p>
 
-  <p>The completion handler for the command again calls <code>Josh.Shell.bestMatch</code> with the partial argument and the list of all branches.
+  <p>The completion handler for the command calls <code>Josh.Shell.bestMatch</code> -- just like <code>repo</code> completion -- with the partial argument and the list of all branches.
   </p>
 
     <h2>Wiring up Josh.PathHandler</h2>
-    <p><code>PathHandler</code> provides unix filepath handling. This works by abstracting the filesystem into two operations, <a href="docs/githubconsole.html#getNode" target="docs"><code>getNode(path, callback)</code></a> and <a href="docs/githubconsole.html#getChildNodes" target="docs"><code>getChildNodes(node, callback)</code></a>. The former returns a file node given a path string while the latter returns file nodes for all children of a given node. With these two all tree operations including <code>TAB</code> completion can be accomplished by <code>PathHandler</code>.</p>
-    <p>A file node is an opaque object in which we can track any file state we want but has to have two properties:</p>
+    <p><code>PathHandler</code> provides unix filepath handling. This works by abstracting the filesystem into two operations, <a href="docs/githubconsole.html#getNode" target="docs"><code>getNode(path, callback)</code></a> and <a href="docs/githubconsole.html#getChildNodes" target="docs"><code>getChildNodes(node, callback)</code></a>. The former returns a pathnode given a path string while the latter returns pathnodes for all children of a given node. With these two all tree operations including <code>TAB</code> completion can be accomplished by <code>PathHandler</code>.</p>
+    <p>A pathnode is an opaque object in which we can track any node state we want but has to have two properties:</p>
     <pre><code>{
   name: 'localname',
   path: '/full/path/to/localname'
