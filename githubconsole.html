@@ -83,7 +83,7 @@
 
     <p>The approach of this tutorial is to walk through the pieces required to wire up
       <code>Josh.Shell</code> to a remote REST API via asynchronous calls to produce an interactive command line interface by explaining the flow. While some code will be shown inline, the primary code reference is the
-      <a href="docs/githubconsole.html">annotated source code</a> with links to specific, mentioned functions throughout the tutorial.
+      <a href="docs/githubconsole.html" target="docs">annotated source code</a> with links to specific, mentioned functions throughout the tutorial.
     </p>
 
     <h2>Application State</h2>
@@ -107,7 +107,7 @@
     <h2>The GitHub API</h2>
 
     <p>GitHub provides a
-      <a href="http://developer.github.com/v3/">REST API</a>, giving access to most of its data and functionality. We're just going to worry about read capability around repositories. Each repo is basically a file system which plays nicely into
+      <a href="http://developer.github.com/v3/" target="_blank">REST API</a>, giving access to most of its data and functionality. We're just going to worry about read capability around repositories. Each repo is basically a file system which plays nicely into
       <code>Josh.PathHandler</code>'s area of applicability.</p>
 
     <p>The user object comes from:</p>
@@ -122,7 +122,7 @@
 
     <p> The API returns
       <em>json</em>, which is perfect for us as well, but it is rather drastically rate limited without authentication. I.e. without authentication you will be limited to 60 requests per hour, while with authentication the limit is 5000 per hour. For this reason, we proxy all github calls through a simple node.js application that can handle oauth to optionally authenticate the use of this console. This application is outside the scope of the tutorial, but the code can be found on the josh.js
-      <a href="https://github.com/sdether/josh.js/tree/github-authentication-backend">github-authentication-backend</a> branch.
+      <a href="https://github.com/sdether/josh.js/tree/github-authentication-backend" target="_blank">github-authentication-backend</a> branch.
     </p>
 
     <h2>Initializing the Console</h2>
