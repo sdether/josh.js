@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <title>Josh.js by sdether</title>
+  <link rel="stylesheet" href="stylesheets/styles.css">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script src="javascripts/respond.js"></script>
+  <!--[if lt IE 9]>
+  <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <!--[if lt IE 8]>
+  <link rel="stylesheet" href="stylesheets/ie.css">
+  <![endif]-->
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <link href='http://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
+</head>
+<body>
+<div id="header">
+  <nav>
+    <li><a href="index.html">Back to the Documentation</a></li>
+  </nav>
+</div>
+<div class="wrapper">
+
+  <section>
+    <h1>Josh.PathHandler</h1>
+
+    <p><code>pathhandler.js</code> is a mix in to easily add the <code>cd</code>, <code>ls</code> and
+      <code>pwd</code> commands as well as path completion. It has
+      <a href="http://underscorejs.org/">Underscore</a> as its dependency for templating, however since all
+      templates it uses are exposed, they could easily be replaced with a different function that accepts an argument object returns html.
+    </p>
+
+    <p>By implementing the functions <code>getNode</code> and
+      <code>getChildNodes</code>, this library adds path traversal, discovery and completion just like a bash shell.
+    </p>
+
+    <h2>The Path Node</h2>
+
+    <p><code>PathHandler</code> deals with files/directories a path node with at least the following two fields:</p>
+    <pre>{
+    name: 'localname',
+    path: '/full/path/to/localname'
+}</pre>
+    <p>where <code>name</code> is the name of the node and
+      <code>path</code> is the absolute path to the node. PathHandler gets path nodes as the callback argument for
+      <code>getNode</code> and does not modify it itself, so any additional state required can be attached to the node and be relied on as being part of the node when it is provided to
+      <code>getChildNodes</code> or a template.</p>
+
+    <h2>The Commands</h2>
+
+    <p><code>PathHandler</code> is used to add standard unix directory handling commands and path completion to <code>Josh.Shell</code>.</p>
+
+    <h3>pwd</h3>
+
+    <p>Prints the current directory, as defined by <code>pathhandler.current</code>.</p>
+
+    <h3>ls [path]</h3>
+
+    <p>Prints out the listing of all childNodes of the node represented by <code>path</code>. If path is not specified, <code>pathhandler.current</code> is used instead.</p>
+
+    <h3>cd [path]</h3>
+
+    <p>Changes <code>pathhandler.current</code> to the node found at <code>path</code>, if one could be found. If path is not specified, <code>pathhandler.current</code> is used instead, resulting in a no-op.</p>
+
+    <h2>Templates</h2>
+
+    <p>Each template is expected to a function that takes a data object and returns html. The default templates are built with
+      <code>_.template</code> but any templating system can be used as long as follows the same behavior.</p>
+
+    <h3>not_found</h3>
+
+    <p>Called when <code>getNode</code> returns null as its callback argument.</p>
+
+    <p>Data:</p>
+    <ul>
+      <li><code>cmd</code> - command that resulted in a miss on path lookup</li>
+      <li><code>path</code> - the path that did not match a node</li>
+    </ul>
+    <h3>ls</h3>
+
+    <p>Called to generate output for a successful <code>ls</code> cmd.</p>
+
+    <p>Data:</p>
+    <ul>
+      <li><code>nodes</code> - array of path nodes</li>
+    </ul>
+    <h3>pwd</h3>
+
+    <p>Called to generate output for <code>pwd</code> cmd.</p>
+
+    <p>Data:</p>
+    <ul>
+      <li><code>node</code> - the <code>current</code> node</li>
+    </ul>
+    <h3>prompt</h3>
+
+    <p>Called to generate the new prompt after any cmd attempt (including after completions).</p>
+
+    <p>Data:</p>
+    <ul>
+      <li><code>node</code> - the <code>current</code> node</li>
+    </ul>
+    <h2>Properties</h2>
+
+    <h3>current</h3>
+    <p>Contains the current directory. It has to be initialized before activating the shell, since on activation, <code>getPrompt</code> will be called by the shell and requires current to be set to display the prompt. Could be changed manually, but generally is changed as a result of calling <code>cd</code>.</p>
+
+    <h3>pathCompletionHandler</h3>
+    <p>Contains the path completion handler used by PathHandler. Exposed so that other commands added that work on paths, can use it as their <code>completion</code> handler. It is used for the <code>ls</code> and <code>cd</code> commands. The only assumption it makes about paths is that they are separated by <code>/</code>.</p>
+    <p>Path completion is done by first finding the nearest node, i.e. if a trailing slash is found, it calls <code>getNode</code> with the path, otherwise it will call <code>getNode</code> and upon receiving null, will take the subpath to the nearest slash and call <code>getNode</code> again. If a node is found in either scenario, it then calls <code>getChildnodes</code> to get all all children, i.e. the possible completions and in turn call <code>shell.bestMatch</code> with any partial path after the slash and the list of possible child node <code>name</code>s.</p>
+
+    <h3>commandAndPathCompletionHandler</h3>
+
+    <p>Contains a wrapper around <code>pathCompletionHandler</code> that replaces the default completion handler of the shell, so that a completion event without a known command can determine whether to complete as a command name or a path.</p>
+
+    <h3>templates</h3>
+    <p>Contains the templates described above.</p>
+
+    <h2>Functions</h2>
+
+    <h3>new Josh.PathHandler(shell, config)</h3>
+    <p>Create a new path handler and attach it to a shell instance.</p>
+
+    <h3>getNode(path, callback)</h3>
+    <p>This method is called with a <code>path</code> and a <code>callback</code> expecting a path node returned if the path is valid. The default implementation always calls <code>callback</code> with null. This is where custom path resolution logic goes and where path nodes are constructed.</p>
+
+    <h3>getChildNodes(node, callback)</h3>
+
+    <p>This method is called by the <code>pathCompletionHandler</code> after resolving a path to a node via <code>getNode</code> and expects its callback to be called with an array of pathnodes.</p>
+
+    <h3>getPrompt</h3>
+
+    <p>This method is called each time the prompt needs to be re-rendered, which in turn calls <code>templates.prompt</code> with <code>pathhandler,current</code>. Could be replaced for custom prompt behavior beyond altering the template.</p>
+
+    <h3></h3>
+
+    <h2>Internal Dependencies</h2>
+
+    <h3>Josh.Shell</h3>
+
+    <h2>External Dependencies</h2>
+
+    <h3>Underscore</h3>
+  </section>
+</div>
+<!--[if !IE]>
+<script>fixScale(document);</script><![endif]-->
+
+</body>
+</html>
