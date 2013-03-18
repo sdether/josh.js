@@ -11,6 +11,15 @@ http://sdether.github.com/josh.js/
 * `history.js` - localStorage backed command history
 * `killring.js` - killring for kill & yank handling in readline
 
+## Tutorials
+* <a href="helloworld.html">Hello world</a> - put a console on a web page and add a new custom command with completion
+* <a href="quakeconsole.html">Quake Console</a> - Create a <em>quake</em>-style console with <code>ls</code>,
+    <code>cd</code>, <code>pwd</code> and bash filename tab-completion
+* <a href="githubconsole.html">GitHub Console</a> - Extend the Quake Console to talk to GitHub's REST API to navigate repositories, their branches and file system
+
+## Articles
+* <a href="http://www.claassen.net/geek/blog/2013/03/cli-all-the-things-introducing-josh-js.html">CLI all the things: Introducing Josh.js</a> Article about the origins of Josh.js with an example console for wordpress sites.
+
 ## License
 josh.js is licensed under the Apache 2.0 License
 
