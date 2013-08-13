@@ -1,7 +1,7 @@
 josh.js 0.2
 ===========
 
-http://sdether.github.com/josh.js/
+http://sdether.github.io/josh.js/
 
 ***Javascript Online SHell*** provides a toolkit for building bash-like command line consoles for web pages. It consists of the following components:
 
@@ -12,10 +12,10 @@ http://sdether.github.com/josh.js/
 * `killring.js` - killring for kill & yank handling in readline
 
 ## Tutorials
-* <a href="helloworld.html">Hello world</a> - put a console on a web page and add a new custom command with completion
-* <a href="quakeconsole.html">Quake Console</a> - Create a <em>quake</em>-style console with <code>ls</code>,
+* <a href="http://sdether.github.io/josh.js/helloworld.html">Hello world</a> - put a console on a web page and add a new custom command with completion
+* <a href="http://sdether.github.io/josh.js/quakeconsole.html">Quake Console</a> - Create a <em>quake</em>-style console with <code>ls</code>,
     <code>cd</code>, <code>pwd</code> and bash filename tab-completion
-* <a href="githubconsole.html">GitHub Console</a> - Extend the Quake Console to talk to GitHub's REST API to navigate repositories, their branches and file system
+* <a href="http://sdether.github.io/josh.js/githubconsole.html">GitHub Console</a> - Extend the Quake Console to talk to GitHub's REST API to navigate repositories, their branches and file system
 
 ## Articles
 * <a href="http://www.claassen.net/geek/blog/2013/03/cli-all-the-things-introducing-josh-js.html">CLI all the things: Introducing Josh.js</a> Article about the origins of Josh.js with an example console for wordpress sites.
@@ -140,17 +140,17 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 * The prompt value itself is now assumed to be html instead of plain text, allowing for richer formatting without changing the input template.
 
 **0.2.7** -- 2013/02/13
-* Removed all html used for Shell UI generation from config to `Shell.templates`, so that they can easily be customized (see: [Issue 11](https://github.com/sdether/josh.js/issues/11 )
+* Removed all html used for Shell UI generation from config to `Shell.templates`, so that they can easily be customized (see: [Issue 11](https://github.com/sdether/josh.js/issues/11))
 * Removed `PathHandler.templates`. PathHandler now attches its templates to `Shell.templates` as well
 
 **0.2.6** -- 2013/01/21
-* Removed Activation/Deactivation keybindings from Readline, making it an outside concern (see: [Issue 2](https://github.com/sdether/josh.js/issues/2 )
+* Removed Activation/Deactivation keybindings from Readline, making it an outside concern (see: [Issue 2](https://github.com/sdether/josh.js/issues/2))
 * Fixed Backspace regression introduced by 0.2.5
 * Fixed `M-d` not deleting last character of line
 * Example shell can now be resized (via jquery-ui.resizable)
 
 **0.2.5** -- 2013/01/14
-* Implemented missing Readline behavior (see: [Issue 1](https://github.com/sdether/josh.js/issues/1 )
+* Implemented missing Readline behavior (see: [Issue 1](https://github.com/sdether/josh.js/issues/1))
 * Added scrollbar to sample implemenation (also adds scrollwheel support)
 
 **0.2.4** -- 2013/01/14
