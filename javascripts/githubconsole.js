@@ -599,6 +599,22 @@
     // shown and hidden.
     function initializeUI() {
       _console.log("activating");
+
+      // We grab the `consoletab` and wire up hover behavior for it.
+      var $consoletab = $('#consoletab');
+      $consoletab.hover(function() {
+        $consoletab.addClass('consoletab-hover');
+        $consoletab.removeClass('consoletab');
+      }, function() {
+        $consoletab.removeClass('consoletab-hover');
+        $consoletab.addClass('consoletab');
+      });
+
+      // We also wire up a click handler to show the console to the `consoletab`.
+      $consoletab.click(function() {
+        activateAndShow();
+      });
+
       var $consolePanel = $('#shell-container');
       $consolePanel.resizable({ handles: "s"});
       $(document).keypress(function(event) {
@@ -611,6 +627,7 @@
         }
       });
       function activateAndShow() {
+        $consoletab.slideUp();
         _self.shell.activate();
         $consolePanel.slideDown();
         $consolePanel.focus();
@@ -620,6 +637,7 @@
         _self.shell.deactivate();
         $consolePanel.slideUp();
         $consolePanel.blur();
+        $consoletab.slideDown();
       }
 
       _self.shell.onEOT(hideAndDeactivate);
