@@ -15,26 +15,28 @@
  *-------------------------------------------------------------------------*/
 
 var Josh = Josh || {};
-Josh.Version = "0.2.7";
+Josh.Version = "0.2.9";
 (function(root) {
-  var SPECIAL = {
-    8: 'BACKSPACE',
-    9: 'TAB',
-    13: 'ENTER',
-    19: 'PAUSE',
-    20: 'CAPS_LOCK',
-    27: 'ESCAPE',
-    32: 'SPACE',
-    33: 'PAGE_UP',
-    34: 'PAGE_DOWN',
-    35: 'END',
-    36: 'HOME',
-    37: 'LEFT',
-    38: 'UP',
-    39: 'RIGHT',
-    40: 'DOWN',
-    45: 'INSERT',
-    46: 'DELETE'
+  Josh.Keys = {
+    Special: {
+      Backspace: 8,
+      Tab: 9,
+      Enter: 13,
+      Pause: 19,
+      CapsLock: 20,
+      Escape: 27,
+      Space: 32,
+      PageUp: 33,
+      PageDown: 34,
+      End: 35,
+      Home: 36,
+      Left: 37,
+      Up: 38,
+      Right: 39,
+      Down: 40,
+      Insert: 45,
+      Delete: 46
+    }
   };
 
   Josh.ReadLine = function(config) {
@@ -46,8 +48,9 @@ Josh.Version = "0.2.7";
       }
     });
     var _history = config.history || new Josh.History();
-    var _deactivationKey = config.deactivationKey || { keyCode: 27 }; // Esc
     var _killring = config.killring || new Josh.KillRing();
+    var _boundToElement = config.element ? true : false;
+    var _element = config.element || root;
     var _active = false;
     var _onActivate;
     var _onDeactivate;
@@ -69,6 +72,72 @@ Josh.Version = "0.2.7";
     var _completionActive;
     var _cmdQueue = [];
     var _suspended = false;
+    var _cmdMap = {
+      complete: cmdComplete,
+      done: cmdDone,
+      noop: cmdNoOp,
+      history_top: cmdHistoryTop,
+      history_end: cmdHistoryEnd,
+      history_next: cmdHistoryNext,
+      history_previous: cmdHistoryPrev,
+      end: cmdEnd,
+      home: cmdHome,
+      left: cmdLeft,
+      right: cmdRight,
+      cancel: cmdCancel,
+      delete: cmdDeleteChar,
+      backspace: cmdBackspace,
+      kill_eof: cmdKillToEOF,
+      kill_wordback: cmdKillWordBackward,
+      kill_wordforward: cmdKillWordForward,
+      yank: cmdYank,
+      clear: cmdClear,
+      search: cmdReverseSearch,
+      wordback: cmdBackwardWord,
+      wordforward: cmdForwardWord,
+      yank_rotate: cmdRotate
+    }
+    var _keyMap = {
+      default: {
+        8: cmdBackspace,    // Backspace
+        9: cmdComplete,     // Tab
+        13: cmdDone,        // Enter
+        27: cmdEsc,         // Esc
+        33: cmdHistoryTop,  // Page Up
+        34: cmdHistoryEnd,  // Page Down
+        35: cmdEnd,         // End
+        36: cmdHome,        // Home
+        37: cmdLeft,        // Left
+        38: cmdHistoryPrev, // Up
+        39: cmdRight,       // Right
+        40: cmdHistoryNext, // Down
+        46: cmdDeleteChar,  // Delete
+        10: cmdNoOp,        // Pause
+        19: cmdNoOp,        // Caps Lock
+        45: cmdNoOp         // Insert
+      },
+      control: {
+        65: cmdHome,          // A
+        66: cmdLeft,          // B
+        67: cmdCancel,        // C
+        68: cmdDeleteChar,    // D
+        69: cmdEnd,           // E
+        70: cmdRight,         // F
+        80: cmdHistoryPrev,   // P
+        78: cmdHistoryNext,   // N
+        75: cmdKillToEOF,     // K
+        89: cmdYank,          // Y
+        76: cmdClear,         // L
+        82: cmdReverseSearch  // R
+      },
+      meta: {
+        8: cmdKillWordBackward, // Backspace
+        66: cmdBackwardWord,    // B
+        68: cmdKillWordForward, // D
+        70: cmdForwardWord,     // F
+        89: cmdRotate           // Y
+      }
+    };
 
     // public methods
     var self = {
@@ -86,6 +155,36 @@ Josh.Version = "0.2.7";
         if(_onDeactivate) {
           _onDeactivate();
         }
+      },
+      bind: function(key, action) {
+        var k = getKey(key);
+        var cmd = _cmdMap[action];
+        if(!cmd) {
+          return;
+        }
+        _keyMap[k.modifier][k.code];
+      },
+      unbind: function(key) {
+        var k = getKey(key);
+        delete _keyMap[k.modifier][k.code];
+      },
+      attach: function(el) {
+        if(_element) {
+          self.detach();
+        }
+        _console.log("attaching");
+        _console.log(el);
+        _element = el;
+        _boundToElement = true;
+        addEvent(_element, "focus", self.activate);
+        addEvent(_element, "blur", self.deactivate);
+        subscribeToKeys();
+      },
+      detach: function() {
+        removeEvent(_element, "focus", self.activate);
+        removeEvent(_element, "blur", self.deactivate);
+        _element = null;
+        _boundToElement = false;
       },
       onActivate: function(completionHandler) {
         _onActivate = completionHandler;
@@ -125,10 +224,31 @@ Josh.Version = "0.2.7";
           text: _text,
           cursor: _cursor
         };
+      },
+      setLine: function(line) {
+        _text = line.text;
+        _cursor = line.cursor;
+        refresh();
       }
     };
 
     // private methods
+    function addEvent(element, name, callback) {
+      if(element.addEventListener) {
+        element.addEventListener(name, callback, false);
+      } else if(element.attachEvent) {
+        element.attachEvent('on' + name, callback);
+      }
+    }
+
+    function removeEvent(element, name, callback) {
+      if(element.removeEventListener) {
+        element.removeEventListener(name, callback, false);
+      } else if(element.detachEvent) {
+        element.detachEvent('on' + name, callback);
+      }
+    }
+
     function getKeyInfo(e) {
       var code = e.keyCode || e.charCode;
       var c = String.fromCharCode(code);
@@ -140,6 +260,22 @@ Josh.Version = "0.2.7";
         alt: e.altKey,
         isChar: true
       };
+    }
+
+    function getKey(key) {
+      var k = {
+        modifier: 'default',
+        code: key.keyCode
+      };
+      if(key.metaKey || key.altKey) {
+        k.modifier = 'meta';
+      } else if(key.ctrlKey) {
+        k.modifier = 'control';
+      }
+      if(key.char) {
+        k.code = key.char.charCodeAt(0);
+      }
+      return k;
     }
 
     function queue(cmd) {
@@ -525,162 +661,69 @@ Josh.Version = "0.2.7";
       return left + ins + right;
     }
 
+    function subscribeToKeys() {
 
-    // set up key capture
-    root.onkeydown = function(e) {
-      e = e || window.event;
+      // set up key capture
+      _element.onkeydown = function(e) {
+        e = e || window.event;
 
-      // return as unhandled if we're not active or the key is just a modifier key
-      if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18 || e.keyCode == 91) {
-        return true;
-      }
-
-      var cmd = null;
-
-      // check for some special first keys, regardless of modifiers
-      switch(e.keyCode) {
-        case 8:  // Backspace
-          cmd = cmdBackspace;
-          break;
-        case 9:  // Tab
-          cmd = cmdComplete;
-          break;
-        case 13: // Enter
-          cmd = cmdDone;
-          break;
-        case 27: // Esc
-          cmd = cmdEsc;
-          break;
-        case 33: // Page Up
-          cmd = cmdHistoryTop;
-          break;
-        case 34: // Page Down
-          cmd = cmdHistoryEnd;
-          break;
-        case 35: // End
-          cmd = cmdEnd;
-          break;
-        case 36: // Home
-          cmd = cmdHome;
-          break;
-        case 37: // Left
-          cmd = cmdLeft;
-          break;
-        case 38: // Up
-          cmd = cmdHistoryPrev;
-          break;
-        case 39: // Right
-          cmd = cmdRight;
-          break;
-        case 40: // Down
-          cmd = cmdHistoryNext;
-          break;
-        case 46: // Delete
-          cmd = cmdDeleteChar;
-          break;
-
-        // these we catch and have no commands for
-        case 10: // Pause
-        case 19: // Caps Lock
-        case 45: // Insert
-          cmd = cmdNoOp;
-          break;
-
-        // all others we don't handle at this level
-        default:
-          break;
-      }
-
-      // intercept ctrl- and meta- sequences (may override the non-modifier cmd captured above
-      if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-        switch(e.keyCode) {
-          case 65: // A
-            cmd = cmdHome;
-            break;
-          case 66: // B
-            cmd = cmdLeft;
-            break;
-          case 67: // C
-            cmd = cmdCancel;
-            break;
-          case 68: // D
-            cmd = cmdDeleteChar;
-            break;
-          case 69: // E
-            cmd = cmdEnd;
-            break;
-          case 70: // F
-            cmd = cmdRight;
-            break;
-          case 80: // P
-            cmd = cmdHistoryPrev;
-            break;
-          case 78: // N
-            cmd = cmdHistoryNext;
-            break;
-          case 75: // K
-            cmd = cmdKillToEOF;
-            break;
-          case 89: // Y
-            cmd = cmdYank;
-            break;
-          case 76: // L
-            cmd = cmdClear;
-            break;
-          case 82: // R
-            cmd = cmdReverseSearch;
-            break;
+        // return as unhandled if we're not active or the key is just a modifier key
+        if(!_active || e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18 || e.keyCode == 91) {
+          return true;
         }
-      } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
-        switch(e.keyCode) {
-          case 8:  // Backspace
-            cmd = cmdKillWordBackward;
-            break;
-          case 66: // B
-            cmd = cmdBackwardWord;
-            break;
-          case 68: // D
-            cmd = cmdKillWordForward;
-            break;
-          case 70: // F
-            cmd = cmdForwardWord;
-            break;
-          case 89: // Y
-            cmd = cmdRotate;
-            break;
-        }
-      }
-      if(!cmd) {
-        return true;
-      }
-      queue(cmd);
-      e.preventDefault();
-      e.stopPropagation();
-      e.cancelBubble = true;
-      return false;
-    };
 
-    root.onkeypress = function(e) {
-      if(!_active) {
-        return true;
-      }
-      var key = getKeyInfo(e);
-      if(key.code == 0 || e.defaultPrevented) {
+        // check for some special first keys, regardless of modifiers
+        _console.log("key: " + e.keyCode);
+        var cmd = _keyMap.default[e.keyCode];
+        // intercept ctrl- and meta- sequences (may override the non-modifier cmd captured above
+        var mod;
+        if(e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+          mod = _keyMap.control[e.keyCode];
+          if(mod) {
+            cmd = mod;
+          }
+        } else if((e.altKey || e.metaKey) && !e.ctrlKey && !e.shiftKey) {
+          mod = _keyMap.meta[e.keyCode];
+          if(mod) {
+            cmd = mod;
+          }
+        }
+        if(!cmd) {
+          return true;
+        }
+        queue(cmd);
+        e.preventDefault();
+        e.stopPropagation();
+        e.cancelBubble = true;
         return false;
-      }
-      queue(function cmdKeyPress() {
-        if(_inSearch) {
-          addSearchText(key.character);
-        } else {
-          addText(key.character);
-        }
-      });
-      e.preventDefault();
-      e.stopPropagation();
-      e.cancelBubble = true;
-      return false;
-    };
+      };
 
+      _element.onkeypress = function(e) {
+        if(!_active) {
+          return true;
+        }
+        var key = getKeyInfo(e);
+        if(key.code == 0 || e.defaultPrevented || e.metaKey || e.altKey || e.ctrlKey) {
+          return false;
+        }
+        queue(function cmdKeyPress() {
+          if(_inSearch) {
+            addSearchText(key.character);
+          } else {
+            addText(key.character);
+          }
+        });
+        e.preventDefault();
+        e.stopPropagation();
+        e.cancelBubble = true;
+        return false;
+      };
+    }
+    if(_boundToElement) {
+      self.attach(_element);
+    } else {
+      subscribeToKeys();
+    }
     return self;
   };
 })(this);
