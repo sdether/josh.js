@@ -134,6 +134,11 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
+**0.2.9** -- 2013/08/31
+* Added ability to bind ReadLine/Shell to an element.
+* Added ability to bind/unbind keys (could be used to replace emacs bindings of readline, but primarily added to unbind some keys for using readline on input elements.
+* Created input.js for easy binding of readline to either an input element or a span behaving like an input.
+
 **0.2.8** -- 2013/03/13
 * Added handling of . and .. in Josh.PathHandler.pathcompletionhandler, so that a trailing .. completes to ../ and . to ./
 * Removed the hardcoded **strong** in the input template, making it a span instead so it can be styled via css instead.

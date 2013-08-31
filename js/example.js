@@ -147,7 +147,7 @@
     // -----------------------
 
     // Activation and display behavior happens at document ready time.
-    $(document).ready(function() {
+    $(root).ready(function() {
 
       // The default name for the div the shell uses as its container is `shell-panel`, although that can be changed via
       // the shell config parameter `shell-panel-id`. The `Shell` display model relies on a 'panel' to contain a 'view'.
@@ -167,10 +167,10 @@
         }
 
         // Mimicking *Quake*-style dropdown consoles, we activate and show on `~`.
-        _console.log("activating shell");
         if(event.keyCode == 126) {
+          _console.log("activating shell");
           event.preventDefault();
-      shell.activate();
+          shell.activate();
           $consolePanel.slideDown();
           $consolePanel.focus();
         }
