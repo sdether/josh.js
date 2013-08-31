@@ -147,7 +147,7 @@
     // -----------------------
 
     // Activation and display behavior happens at document ready time.
-    $(document).ready(function() {
+    $(root).ready(function() {
 
       // The default name for the div the shell uses as its container is `shell-panel`, although that can be changed via
       // the shell config parameter `shell-panel-id`. The `Shell` display model relies on a 'panel' to contain a 'view'.
@@ -155,11 +155,12 @@
       // to and scrolled up as new content is added.
       var $consolePanel = $('#shell-panel');
 
+      // attach readline to the shell panel
+      readline.attach($consolePanel.get(0));
+      $consolePanel.focus();
+
       // We use **jquery-ui**'s `resizable` to let us drag the bottom edge of the console up and down.
       $consolePanel.resizable({ handles: "s"});
-
-      // activate the shell
-      shell.activate();
     });
 
     // We attach the various objects we've created here to `Josh.Instance` purely so they can be inspected via a
