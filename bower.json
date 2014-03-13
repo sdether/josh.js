@@ -1,0 +1,29 @@
+{
+  "name": "josh.js",
+  "version": "0.2.9",
+  "homepage": "http://sdether.github.io/josh.js/",
+  "authors": [
+    "Arne Claassen <arne@claassen.net>"
+  ],
+  "description": "Javascript Online SHell provides a toolkit for building bash-like command line consoles for web pages.",
+  "main": [
+    "js/readline.js",
+    "js/history.js",
+    "js/input.js",
+    "js/killring.js",
+    "js/pathhandler.js",
+    "js/shell.js"
+  ],
+  "keywords": [
+    "shell",
+    "josh"
+  ],
+  "license": "Apache 2.0",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
