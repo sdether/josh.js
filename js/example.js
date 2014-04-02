@@ -45,7 +45,7 @@
     // -------------------------
 
     // Setup the `Underscore` template for displaying items in the `KillRing`.
-    var killringItemTemplate = _.template("<div><% _.each(items, function(item, i) { %><div><%- i %>&nbsp;<%- item %></div><% }); %></div>")
+    var killringItemTemplate = _.template("<div><% _.each(items, function(item, i) { %><div><%- i %>&nbsp;<%- item %></div><% }); %></div>");
 
     // Create a the command `killring` which will display all text currently in the `KillRing`, by attaching
     // a handler to the `Shell`.
@@ -125,7 +125,7 @@
     // references like `.` and `..`. In implementations that let you explore an hierarchy on a server, this function
     // would live on the server side and be called remotely via `getNode`.
     function findNode(current, parts, callback) {
-      if(!parts || parts.length == 0) {
+      if(!parts || parts.length === 0) {
         return callback(current);
       }
       if(parts[0] == ".") {
@@ -208,7 +208,7 @@
         boot: {},
         dev: {},
         etc: {
-          default: {},
+          'default': {},
           'rc.d': {},
           sysconfig: {},
           x11: {}
@@ -254,7 +254,7 @@
           },
           src: {}
         },
-        var: {
+        'var': {
           lib: {},
           lock: {},
           run: {},
