@@ -22,7 +22,7 @@ var Josh = Josh || {};
         var range = this.createTextRange();
         range.move("character", index);
         range.select();
-      } else if (this.selectionStart != null) {
+    } else if (this.selectionStart !== null) {
         this.setSelectionRange(index, index);
       }
       next();
@@ -34,7 +34,7 @@ var Josh = Josh || {};
       var range = el.createTextRange();
       range.moveStart('character', -el.value.length);
       return range.text.length;
-    } else if (el.selectionStart != null) {
+  } else if (el.selectionStart !== null) {
       return el.selectionStart;
     }
     return 0;
@@ -154,7 +154,7 @@ var Josh = Josh || {};
         readline.onChange(renderSpan);
       }
       readline.unbind({keyCode: Josh.Keys.Special.Tab});
-      readline.unbind({char: 'R', ctrlKey: true});
+      readline.unbind({'char': 'R', ctrlKey: true});
       readline.onActivate(function () {
         _active = true;
         activate();
