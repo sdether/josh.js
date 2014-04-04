@@ -134,6 +134,10 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 
 ## Changelog
 
+**0.2.10** -- 2014/04/03
+* Added bower support (pr#19 - @bricef)
+* Code clean-up for closure compiler issues (pr#20 - @aaronmars)
+
 **0.2.9** -- 2013/08/31
 * Added ability to bind ReadLine/Shell to an element.
 * Added ability to bind/unbind keys (could be used to replace emacs bindings of readline, but primarily added to unbind some keys for using readline on input elements.
