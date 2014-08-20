@@ -28,7 +28,11 @@ var Josh = Josh || {};
     var _key = config.key || 'josh.history';
 
     if (_storage) {
-      var data = _storage.getItem(_key);
+      try {
+        var data = _storage.getItem(_key);
+      } catch(e) {
+        _console.log("Error accessing storage");
+      }
       if (data) {
         _history = JSON.parse(data);
         _searchCursor = _cursor = _history.length - 1;
@@ -37,8 +41,10 @@ var Josh = Josh || {};
       }
     }
     function save() {
-      if (_storage) {
+      try {
         _storage.setItem(_key, JSON.stringify(_history));
+      } catch(e) {
+        _console.log("Error accessing storage");
       }
     }
 
