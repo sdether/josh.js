@@ -41,10 +41,12 @@ var Josh = Josh || {};
       }
     }
     function save() {
-      try {
-        _storage.setItem(_key, JSON.stringify(_history));
-      } catch(e) {
-        _console.log("Error accessing storage");
+      if (_storage) {
+        try {
+          _storage.setItem(_key, JSON.stringify(_history));
+        } catch(e) {
+          _console.log("Error accessing storage");
+        }
       }
     }
 
