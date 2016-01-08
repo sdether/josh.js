@@ -130,7 +130,7 @@ By implementing the functions `getNode` and `getChildNodes`, this library adds p
 `history.js` implements a localStorage back command history storage that persists over page changes and reloads. It is used by the `shell.js` history command to list all executed commands, and by `readline.js` for up/down arrow and reverse search capabilities.
 
 ### killring.js
-`killing.js` implements the kill and yank behavior as well as state tracking, i.e. multiple consecutive kills are combined as a single kill and killring rotation tracks the previous yank, so that the `readline.js` can remove the previous yank and replace it with the rotated text.
+`killring.js` implements the kill and yank behavior as well as state tracking, i.e. multiple consecutive kills are combined as a single kill and killring rotation tracks the previous yank, so that the `readline.js` can remove the previous yank and replace it with the rotated text.
 
 ## Changelog
 
