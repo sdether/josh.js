@@ -4,7 +4,7 @@ josh.js 0.2
 http://sdether.github.io/josh.js/
 
 ***Javascript Online SHell*** provides a toolkit for building bash-like command line consoles for web pages. 
-JOSH enables the user to use the web page and maneuver through its contents using a console rather than clicking with a mouse. This enables the administrator that prefers the bash-like command to use the web page more efficiently. The administrator also can set up his web page so that its users can browse through the commands and be able to type use it themselves. JOSH can be equipped to normal web pages and the user can assign commands to his website and customize its usage through the console.  This program is most useful for people with computer experience that like to use console because it is faster and more effective than using a mouse. It consists of the following components:
+JOSH enables the user to maneuver through its contents using a console rather than clicking with a mouse. This enables the administrator that prefers the bash-like command to use the web page more efficiently. The administrator also can set up his web page so that its users can browse through the commands and be able to type use it themselves. JOSH can be equipped to normal web pages and the user can assign commands to his website and customize its usage through the console.  This program is most useful for people with computer experience that like to use console because it is faster and more effective than using a mouse. It consists of the following components:
 
 * `readline.js` - full readline support for ctrl sequences, tab, history, etc.
 * `shell.js` - visual presentation of the shell and command handling
