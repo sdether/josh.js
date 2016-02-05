@@ -11,6 +11,10 @@ http://sdether.github.io/josh.js/
 * `history.js` - localStorage backed command history
 * `killring.js` - killring for kill & yank handling in readline
 
+##What to use Josh for and when to use it
+
+Josh allows developers to build their own command line interface to any sites. It supports full CLI Readline in the browser like TAB completion, emacs-style line editing, killring and history with reverse search.
+
 ## Tutorials
 * <a href="http://sdether.github.io/josh.js/helloworld.html">Hello world</a> - put a console on a web page and add a new custom command with completion
 * <a href="http://sdether.github.io/josh.js/quakeconsole.html">Quake Console</a> - Create a <em>quake</em>-style console with <code>ls</code>,
