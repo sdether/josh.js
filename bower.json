@@ -9,8 +9,8 @@
   "main": [
     "js/readline.js",
     "js/history.js",
-    "js/input.js",
     "js/killring.js",
+    "js/input.js",
     "js/pathhandler.js",
     "js/shell.js"
   ],
@@ -25,5 +25,9 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "jquery": "~3.1.0",
+    "lodash": "~4.14.2"
+  }
 }
