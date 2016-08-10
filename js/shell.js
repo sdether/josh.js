@@ -59,7 +59,7 @@ var Josh = Josh || {};
       },
       _default: {
         exec: function(cmd, args, callback) {
-          callback(self.templates.bad_command({cmd: cmd}));
+          callback(self.templates.bad_command({cmd: cmd, args: args}));
         },
         completion: function(cmd, arg, line, callback) {
           if(!arg) {
